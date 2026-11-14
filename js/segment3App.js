@@ -10,6 +10,7 @@ import { ExteriorVisualizer, InteriorBlueprintVisualizer } from './baseVisualize
 import { GazeboPhysicsEngine } from './gazeboPhysics.js';
 import { ThreeBaseRenderer } from './threeBaseRenderer.js';
 import { contractBus } from './contract.js';
+import { Segment4App } from './engine/segment4App.js';
 
 export class Segment3App {
   constructor() {
@@ -82,6 +83,14 @@ export class Segment3App {
 
     } catch (e) {
       console.warn('3D Three.js renderer failed to initialize:', e);
+    }
+
+    // 5. Segment 4 Game Engine & 3D Surface Simulation
+    try {
+      window.jamnSegment4App = new Segment4App();
+      window.jamnSegment4App.init();
+    } catch (e) {
+      console.warn('Segment 4 engine failed to initialize:', e);
     }
 
     this.logEvent('SYSTEM', `Segment 3 initialized. Site: ${this.currentSiteId} // Gazebo 0.38g solid physics active`);
@@ -439,6 +448,14 @@ export class Segment3App {
       });
     }
 
+    // Sol Briefing Button
+    const btnOpenBriefing = document.getElementById('btnOpenBriefingModal');
+    if (btnOpenBriefing) {
+      btnOpenBriefing.addEventListener('click', () => {
+        document.getElementById('morningBriefingModal')?.classList.remove('hidden');
+      });
+    }
+
     // Navigation Tabs & Action Buttons via global delegation
     document.addEventListener('click', (e) => {
       const targetBtn = e.target.closest('[data-target-screen]');
@@ -510,7 +527,7 @@ export class Segment3App {
     if (siteAtmEl) siteAtmEl.textContent = site.atmosphereDensity;
 
     // Update Screen Visibility
-    const screens = ['base_entry', 'base_info', 'base_nav', 'challenge_select', 'mission_launched'];
+    const screens = ['base_entry', 'base_info', 'base_nav', 'challenge_select', 'mission_launched', 'game_engine'];
     for (const sc of screens) {
       const el = document.getElementById(`screen_${sc}`);
       if (el) el.classList.toggle('active-screen', this.currentScreen === sc);

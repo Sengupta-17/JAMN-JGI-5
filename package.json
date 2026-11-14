@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "Junior Astronaut Mission Trainer - Segment 3: Mars Base Entry, Info, Interactive Navigation, and Challenge Selection",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "start": "python -m http.server 3000",
-    "serve": "npx --yes serve ."
+    "serve": "npx --yes serve .",
+    "test": "node tests/test_parameters.js"
   },
   "keywords": [
     "mars",

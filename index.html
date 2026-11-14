@@ -45,12 +45,13 @@
     </div>
   </div>
 
-  <!-- SEGMENT 3 NAVIGATION TABS -->
+  <!-- SEGMENT 3 & 4 NAVIGATION TABS -->
   <nav class="segment-nav-tabs">
     <button class="nav-tab-btn active-tab" data-target-screen="base_entry">1. BASE ENTRY</button>
     <button class="nav-tab-btn" data-target-screen="base_info">2. BASE INFO</button>
     <button class="nav-tab-btn" data-target-screen="base_nav">3. 3D BASE EXPLORATION & REPAIR</button>
     <button class="nav-tab-btn" data-target-screen="challenge_select">4. CHALLENGE BRIEFING</button>
+    <button class="nav-tab-btn" data-target-screen="game_engine" id="tabBtnSegment4">5. SEGMENT 4 ENGINE</button>
   </nav>
 
   <!-- MAIN WORKSPACE STAGE -->
@@ -223,13 +224,212 @@
         <p>
           Segment 3 hand-off event <code>challengeSelected(siteId, challengeType)</code> has been successfully dispatched to the Segment 4 Game Engine. Base telemetry and starting parameters have been calibrated.
         </p>
-        <div style="display: flex; justify-content: center; gap: 14px;">
+        <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+          <button id="btnEnterSegment4Direct" class="btn-primary-action" data-target-screen="game_engine" style="padding: 12px 28px;">
+            🎮 ENTER 3D MARS SURFACE SIMULATION (SEGMENT 4) →
+          </button>
           <button class="btn-tactical" data-target-screen="base_nav">
             RETURN TO 3D BASE EXPLORATION
           </button>
           <button class="btn-tactical" data-target-screen="base_entry">
             RETURN TO BASE ENTRY
           </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN E: SEGMENT 4 GAME ENGINE (30-SOL MARS SURFACE SIMULATION) -->
+    <section id="screen_game_engine" class="screen-panel">
+      <div class="engine-layout">
+        <!-- TOP TELEMETRY & PHASE STRIP -->
+        <div class="engine-telemetry-header">
+          <div class="sol-phase-block">
+            <div class="sol-badge">SOL <span id="hudSolNumber">01</span> / 30</div>
+            <div id="hudPhasePill" class="phase-pill day">☀️ DAY (42s)</div>
+            <div class="sol-progress-track">
+              <div id="hudSolProgressFill" class="sol-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- METEOROLOGY & ENVIRONMENTAL TELEMETRY -->
+          <div class="engine-env-strip">
+            <div><span class="hud-label">ATM OPACITY:</span><span id="hudStormTau" class="hud-val">Tau: 0.5</span></div>
+            <div><span class="hud-label">RADIATION:</span><span id="hudRadiationDose" class="hud-val">0.66 mSv</span></div>
+            <div><span class="hud-label">DEBT:</span><span id="hudConditioningDebt" class="hud-val">0 pts</span></div>
+            <div><span class="hud-label">CREW-HOURS:</span><span id="hudCrewHours" class="hud-val ch-val">20 / 20 CH</span></div>
+          </div>
+
+          <div class="engine-header-actions">
+            <button id="btnOpenBriefingModal" class="btn-tactical">📋 SOL BRIEFING</button>
+          </div>
+        </div>
+
+        <!-- ACTIVE HAZARD / ALARM NOTIFICATION BAR -->
+        <div id="hudHazardNotice" class="hazard-notice-bar hidden"></div>
+
+        <!-- STRICTLY 4 BASE METERS (NASA BVAD CALIBRATED) -->
+        <div class="engine-meters-row">
+          <!-- OXYGEN -->
+          <div class="engine-meter-card" id="card_oxygen">
+            <div class="meter-head">
+              <span class="meter-name">💨 OXYGEN</span>
+              <span id="meterStatus_oxygen" class="status-tag nominal">NOMINAL</span>
+            </div>
+            <div class="meter-value-line">
+              <span id="meterVal_oxygen" class="meter-val">70.0%</span>
+              <span id="meterRate_oxygen" class="meter-rate positive">+0.00 pp/sol</span>
+            </div>
+            <div class="meter-track">
+              <div id="meterFill_oxygen" class="meter-fill nominal" style="width: 70%;"></div>
+            </div>
+            <div class="meter-subtext">OGA Electrolysis (12-sol reserve)</div>
+          </div>
+
+          <!-- FOOD -->
+          <div class="engine-meter-card" id="card_food">
+            <div class="meter-head">
+              <span class="meter-name">🌱 FOOD</span>
+              <span id="meterStatus_food" class="status-tag nominal">NOMINAL</span>
+            </div>
+            <div class="meter-value-line">
+              <span id="meterVal_food" class="meter-val">75.0%</span>
+              <span id="meterRate_food" class="meter-rate negative">-1.73 pp/sol</span>
+            </div>
+            <div class="meter-track">
+              <div id="meterFill_food" class="meter-fill nominal" style="width: 75%;"></div>
+            </div>
+            <div class="meter-subtext">Stored Rations + 22% Crop Offset</div>
+          </div>
+
+          <!-- WATER -->
+          <div class="engine-meter-card" id="card_water">
+            <div class="meter-head">
+              <span class="meter-name">💧 WATER</span>
+              <span id="meterStatus_water" class="status-tag nominal">NOMINAL</span>
+            </div>
+            <div class="meter-value-line">
+              <span id="meterVal_water" class="meter-val">68.0%</span>
+              <span id="meterRate_water" class="meter-rate negative">-1.36 pp/sol</span>
+            </div>
+            <div class="meter-track">
+              <div id="meterFill_water" class="meter-fill nominal" style="width: 68%;"></div>
+            </div>
+            <div class="meter-subtext">94% Recovery Loop + Ice ISRU</div>
+          </div>
+
+          <!-- POWER -->
+          <div class="engine-meter-card" id="card_power">
+            <div class="meter-head">
+              <span class="meter-name">⚡ POWER</span>
+              <span id="meterStatus_power" class="status-tag nominal">NOMINAL</span>
+            </div>
+            <div class="meter-value-line">
+              <span id="meterVal_power" class="meter-val">72.0%</span>
+              <span id="meterRate_power" class="meter-rate positive">+1.69 pp/sol</span>
+            </div>
+            <div class="meter-track">
+              <div id="meterFill_power" class="meter-fill nominal" style="width: 72%;"></div>
+            </div>
+            <div class="meter-subtext">10 kWe Reactor + Solar Array Farm</div>
+          </div>
+        </div>
+
+        <!-- 3D MARS SURFACE SIMULATOR VIEWPORT -->
+        <div class="surface-viewport-container">
+          <div id="surfaceSimulatorContainer" class="surface-canvas-wrap"></div>
+          
+          <!-- Viewport Overlay with Camera View Switcher -->
+          <div class="surface-viewport-overlay">
+            <div class="camera-controls-cluster">
+              <button id="btnToggleSurfaceCamera" class="btn-overlay-tag">VIEW: ROVER CHASE (V)</button>
+              <span class="overlay-hint">WASD: DRIVE/WALK | SPACE: 0.38g JUMP | V: CAMERA VIEW</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMMAND DECK & TACTICAL ACTIONS -->
+        <div class="command-deck-grid">
+          <!-- CONSERVATION POLICY SELECTOR -->
+          <div class="command-card policy-card">
+            <div class="command-title">OPERATING POLICY // CONSERVATION MODE</div>
+            <div class="policy-btn-group">
+              <button class="btn-conserve-mode active" data-mode="normal">
+                <strong>NORMAL (L0)</strong>
+                <span>100% ECLSS, Extraction, Crops</span>
+              </button>
+              <button class="btn-conserve-mode" data-mode="conserve">
+                <strong>CONSERVE (L1)</strong>
+                <span>65% Base Load, 50% Crops</span>
+              </button>
+              <button class="btn-conserve-mode" data-mode="survival">
+                <strong>SURVIVAL (L2)</strong>
+                <span>50% Load, Crops/Extract OFF</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TACTICAL CREW ACTIONS -->
+          <div class="command-card actions-card">
+            <div class="command-title">CREW ACTIONS // CH COUNTERMEASURES</div>
+            <div class="action-buttons-grid">
+              <button id="btnActBrine" class="btn-action-tile" title="Sets recovery target to 98% for 5 sols">
+                <span class="tile-icon">🔄</span>
+                <div class="tile-info">
+                  <span class="tile-name">Brine Cycle (98% WRS)</span>
+                  <span class="tile-cost">COST: 2 CH</span>
+                </div>
+              </button>
+              <button id="btnActDrill" class="btn-action-tile" title="Flushes wellbore for instant water recovery">
+                <span class="tile-icon">⛏️</span>
+                <div class="tile-info">
+                  <span class="tile-name">Drill / Flush Ice Well</span>
+                  <span class="tile-cost">COST: 3 CH</span>
+                </div>
+              </button>
+              <button id="btnActTend" class="btn-action-tile" title="Cleans aeroponics and restores full tending">
+                <span class="tile-icon">🌾</span>
+                <div class="tile-info">
+                  <span class="tile-name">Tend Crop Racks</span>
+                  <span class="tile-cost">COST: 2 CH</span>
+                </div>
+              </button>
+              <button id="btnActExercise" class="btn-action-tile" title="Daily 1.2h countermeasure preventing conditioning debt">
+                <span class="tile-icon">🏋️</span>
+                <div class="tile-info">
+                  <span class="tile-name">Complete Exercise Block</span>
+                  <span class="tile-cost">COST: 5 CH</span>
+                </div>
+              </button>
+              <button id="btnActPulse" class="btn-action-tile" title="Electrostatic pulse clears 50% array dust">
+                <span class="tile-icon">⚡</span>
+                <div class="tile-info">
+                  <span class="tile-name">Clean Arrays (Pulse)</span>
+                  <span class="tile-cost">COST: 1 CH</span>
+                </div>
+              </button>
+              <button id="btnActEVAArray" class="btn-action-tile" title="Manual EVA sweep clears array dust to 5%">
+                <span class="tile-icon">🧑‍🚀</span>
+                <div class="tile-info">
+                  <span class="tile-name">Manual EVA Array Clean</span>
+                  <span class="tile-cost">COST: 4 CH</span>
+                </div>
+              </button>
+              <button id="btnActBerm" class="btn-action-tile" title="Shields habitat with regolith berm, halving SPE dose">
+                <span class="tile-icon">🧱</span>
+                <div class="tile-info">
+                  <span class="tile-name">Build Regolith Berm</span>
+                  <span class="tile-cost">COST: 4 CH</span>
+                </div>
+              </button>
+              <button id="btnActIsolate" class="btn-action-tile" title="Isolates breached airlock bulkhead">
+                <span class="tile-icon">🔒</span>
+                <div class="tile-info">
+                  <span class="tile-name">Isolate Seal Leak</span>
+                  <span class="tile-cost">COST: 0 CH</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -250,6 +450,53 @@
       <div id="airlockPressureText" class="airlock-pressure">CHAMBER: 0.62 kPa</div>
     </div>
   </div>
+
+  <!-- MORNING BRIEFING & WEATHER MODAL (§4.5.3, §4.5.10) -->
+  <div id="morningBriefingModal" class="airlock-modal-overlay hidden">
+    <div class="briefing-dialog">
+      <div class="briefing-header">
+        <span class="briefing-title">SOL <span id="briefingSolNum">01</span> // MORNING COMMAND BRIEFING</span>
+        <button id="btnCloseBriefingModal" class="side-popup-close">✕</button>
+      </div>
+      <div class="briefing-body">
+        <div class="briefing-section">
+          <h4>OVERNIGHT TELEMETRY & SYSTEM LOG</h4>
+          <ul id="briefingOvernightList" class="briefing-list"></ul>
+        </div>
+        <div class="briefing-section">
+          <h4>METEOROLOGICAL & ORBITAL FORECAST</h4>
+          <ul id="briefingForecastList" class="briefing-list"></ul>
+        </div>
+        <div class="briefing-ch-summary">
+          <span>DISCRETIONARY TIME ALLOCATED:</span>
+          <strong id="briefingCH" style="color: #38bdf8;">20 Crew-Hours</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISSION HANDOVER / GAME OVER MODAL (§4.5.7, §4.5.8) -->
+  <div id="handoverModal" class="airlock-modal-overlay hidden">
+    <div class="handover-dialog">
+      <div class="handover-icon">🪐</div>
+      <h2 id="handoverTitle">MISSION COMPLETED</h2>
+      <div id="handoverGradeBadge" class="handover-badge success">Certified Handover Ready</div>
+      <p id="handoverReasonText" class="handover-reason">All resource reserves >= 25%. Base ready for next astronaut.</p>
+      
+      <div id="handoverStatsGrid" class="handover-stats-grid">
+        <!-- Filled dynamically -->
+      </div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: center; gap: 14px;">
+        <button id="btnRetryMission" class="btn-primary-action" style="padding: 12px 30px;">
+          🔄 RETRY MISSION (NEW 30-SOL SCRIPT)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION TOAST NOTICE -->
+  <div id="actionNoticeToast" class="action-notice-toast hidden"></div>
 
   <!-- SIMULATION / DEV TESTING DOCK -->
   <footer class="dev-simulation-dock">

@@ -1,115 +1,90 @@
-# Junior Astronaut Mission Trainer — Segment 3: Mars Base Operations
+# Junior Astronaut Mission Trainer — Segments 3 & 4
 
-This repository contains the production implementation of **Segment 3** for the *Junior Astronaut Mission Trainer* project.
-
----
-
-## 🚀 Overview of Segment 3
-
-Segment 3 covers everything from touchdown at the chosen Martian landing site up to launching the 30-sol survival simulation in Segment 4:
-
-1. **Base Entry & Surface View**
-   - High-fidelity visual landscape of Mars tailored to the 4 landing sites (North Polar Ice Cap, Olympus Mons, Valles Marineris, Hellas Basin).
-   - Inflatable habitat domes, 3D-printed regolith radiation shield (NASA CHAPEA Mars Dune Alpha style), Kilopower Stirling nuclear reactor, and solar wings.
-   - Interactive airlock cycle with a 5-stage hyperbaric pressure equalization sequence (0.62 kPa to 101.3 kPa).
-
-2. **Base Telemetry & Resource HUD**
-   - Tracks the **four fundamental base parameters**: `Oxygen`, `Food`, `Water`, and `Power`.
-   - Scientifically calibrated starting parameter baselines per site.
-   - Live telemetry status badges (Nominal / Deficit / Critical) and sensor breakdowns.
-
-3. **Fullscreen 3D First-Person Base Exploration (Three.js & Gazebo Contact Physics)**
-   - **Fullscreen First-Person View (FPV):** The 3D movement screen occupies the full browser viewport with an in-cockpit Mini HUD showing live Oxygen, Food, Water, and Power reserves.
-   - **Slide-in Side Popup Panel:** Replaces static sidebars. Pressing `[E]` near any subsystem smoothly slides in a dedicated diagnostic and repair panel from the right.
-   - **Solid Collision Physics:** Every interior object (3 radial science lab desks, command console, ergonomic chair, server racks, OGA electrolysis tanks, Sabatier reactor, aeroponic towers, centrifuge, and 20 perimeter cabinets) is bounded with strict collision hulls.
-   - **Transparent Greenhouse Dome Roof:** The habitat dome features a transparent greenhouse structure overhead. Looking up reveals the Martian atmospheric sky, sun glare, outer red desert landscape, distant crater rims, and external solar panel arrays.
-   - **Interactive Airlock Blast Door:** A circular sci-fi bulkhead hatch featuring pneumatic actuators, locking wheel, and status LED indicator (red when locked, green when open). Pressing `[E]` animates the door open with procedural hydraulic servo audio, allowing the astronaut to physically walk into the EVA airlock vestibule and observe Mars through the outer surface viewport.
-   - **Gazebo Contact Physics:**
-     * Implements Gazebo ODE contact physics under Martian partial gravity ($0.38g = 3.72\text{ m/s}^2$).
-     * Astronaut kinematic capsule collider ($r=0.38\text{m}, h=1.72\text{m}$).
-     * Penetration depth resolution, contact normal forces, surface friction ($\mu=0.82$), and tangential velocity projection for smooth wall-sliding.
-     * Gazebo world definitions in `physics/base_habitat.world` and `physics/astronaut_kinematics.sdf`.
-   - **Emergency Repair Loop:** When Segment 4 emits `baseIssueRaised`, the afflicted module pulses red with an audible siren. The astronaut can walk up to it in 3D and execute repairs via the slide-in popup panel, emitting `baseIssueFixed(locationId)` back to Segment 4.
-
-4. **Challenge Briefing & Mission Allocation**
-   - Detailed descriptions of the 4 operational Martian challenges (Standard Survival, Global Dust Storm & Power Crisis, ECLSS Atmospheric Decompression, Hydrologic Failure & Agricultural Triage).
-   - Random allocation upon launch into Segment 4:
-   - When the astronaut clicks **"LAUNCH MISSION"**, a challenge is **randomly assigned** and dispatched to Segment 4 via:
-     $$\text{challengeSelected}(\text{siteId}, \text{randomChallengeType})$$
+Production implementation of **Segment 3** (Base Operations, 3D First-Person Ingress & Hardware Diagnostics) and **Segment 4** (Game Engine: NASA BVAD Rev. 2 Parameter Physics, 30-Sol Diurnal Cycle, 7 Modular Hazards, and 3D Mars Surface Simulation) for the *Junior Astronaut Mission Trainer*.
 
 ---
 
-## 🎮 First-Person Controls
+## 🚀 Overview
 
+### Segment 3: Mars Base Operations & Diagnostics
+* **Base Ingress & Site Profiles:** 4 authentic landing sites (North Polar Ice Cap, Olympus Mons, Valles Marineris, Hellas Basin) with localized elevation, atmospheric density, and diurnal thermal swings.
+* **5-Stage Hyperbaric Airlock Equalization:** Equalizes pressure from ambient Mars ($0.62\text{ kPa}$) to habitat exploration pressure with audio feedback.
+* **Fullscreen First-Person 3D Viewport:** Interactive interior habitat rendering with an icosahedron greenhouse glass dome, external Martian landscape, and animated airlock blast door.
+* **Gazebo Contact Physics:** Implements Gazebo ODE contact projection ($0.38g = 3.72\text{ m/s}^2$, $\mu=0.82$) with solid capsule colliders preventing object phasing.
+* **Slide-in Diagnostics & Repairs:** Walk up to any of the 7 hardware modules in first-person and press `[E]` to diagnose and repair faults.
+
+### Segment 4: 30-Sol Martian Surface Game Engine
+* **NASA BVAD Rev. 2 Scientific Calibration:**
+  - **Oxygen ($100\% = 42.96\text{ kg}$):** 12 crew-days metabolic reserve for 4 crew ($D_O = 8.333\text{ pp/sol}$). Healthy Oxygen Generation Assembly (OGA) electrolyzes water to match crew demand; rates scale with ECLSS module health, available power, water feed, and airlock seal tightness.
+  - **Food ($100\% = 144.0\text{ kg}$):** 45 crew-days dry food solids ($D_F = 2.222\text{ pp/sol}$). Staggered hydroponics supply up to a $22\%$ caloric harvest credit ($0.489\text{ pp/sol}$) under nominal lighting, temperature, and tending.
+  - **Water ($100\% = 21.504\text{ kg}$):** 20 sols of net make-up water reserve for a $94\%$-efficient recovery loop ($D_W = 5.00\text{ pp/sol}$ make-up loss). Under high-recovery brine processing ($98\%$), loss drops to $1.67\text{ pp/sol}$. Local ice extraction adds $(2.00 + 1.50\sqrt{i_{\text{site}}})\cdot h_{\text{water}}\cdot\text{isruWater}\text{ pp/sol}$.
+  - **Power ($100\% = 2,400\text{ kWh}$):** 5 sols of continuous $20\text{ kWe}$ nominal habitat load ($20\text{ pp/sol}$ consumption). Powered by a $10\text{ kWe}$ Kilopower fission reactor ($0.50$ supply, unaffected by dust) and photovoltaic arrays ($0.60$ supply, attenuated by atmospheric opacity $T_\tau = \exp(-0.45\cdot\max(0, \tau - 0.5))$ and array soiling).
+* **Automatic Load Shedding Cascades:** Realistic degradation across 40%, 25%, 10%, and 0% blackout thresholds.
+* **30-Sol Diurnal Simulation Clock:** 60 seconds real-time per sol (42s Day / 18s Night, ~30 minutes total play) with continuous sub-tick integration.
+* **Crew Economy & Conditioning Debt:** 20 discretionary Crew-Hours (CH) pool per sol. Skipping the daily 5 CH exercise countermeasure accumulates conditioning debt, reducing future CH and increasing external EVA repair costs.
+* **7 Modular Environmental Hazards:** Water scarcity, food production failure, subzero cold snaps, chronic/SPE radiation, low gravity, regional/global dust storms, and thin atmosphere seal decompression.
+* **3D Mars Surface Simulation:**
+  - Multi-chunk procedural terrain streaming with continuous Level of Detail (LOD) and gap-free skirts.
+  - 6-wheel rocker-bogie exploration rover vehicle dynamics with terrain slope pitch/roll adaptation and chase camera.
+  - 0.38g surface astronaut EVA locomotion and low-gravity leaps.
+  - Diurnal Martian sky shader and dynamic sun light tracking the sol clock.
+  - GPU dust storm particle system scaling with atmospheric optical depth ($\tau$).
+* **Handover Evaluation at Sol 30:** Grades mission as *Certified Handover Ready*, *Marginal Completion*, or *Failed Mission*.
+
+---
+
+## 🎮 Controls
+
+### Interior Base Operations (Segment 3)
 | Control | Action |
 |---------|--------|
-| **W / A / S / D** or **Arrow Keys** | Walk forward, left, backward, right |
+| **W / A / S / D** or **Arrows** | Walk forward, left, backward, right |
 | **Mouse Look (Click viewport)** | Rotate head / look around (Pointer Lock) |
 | **Spacebar** | Low-gravity jump ($0.38g$ Martian leap) |
 | **[E] Key** | Interact with terminal / Toggle Airlock Blast Door |
 | **[ESC] Key** | Close side popup / Release mouse look |
-| **[Tab] Key or ✕ EXIT 3D** | Return to mission tabs from fullscreen 3D |
-| **View Toggle Button** | Switch between 3D FPV Interior and 2D Schematic Blueprint |
+| **[TAB] Key** | Exit 3D Viewport to navigation menu |
+
+### Surface Simulation & Rover (Segment 4)
+| Control | Action |
+|---------|--------|
+| **W / S** or **Up / Down** | Rover throttle / Astronaut walk |
+| **A / D** or **Left / Right** | Rover steering / Astronaut turn |
+| **Spacebar** | Low-gravity leap ($0.38g$, in Astronaut EVA view) |
+| **[V] Key** | Toggle camera mode: **Rover Chase** $\to$ **Astronaut EVA** $\to$ **Tactical Orbit** |
 
 ---
 
-## 📦 Directory Structure
+## 🧪 Automated Scientific Test Suite
 
+The project includes an automated test runner validating the 12 scientific acceptance criteria from Section 6.5 of the Mission Specifications:
+
+```bash
+npm test
 ```
-JAMN-JGI-5/
-├── index.html                 # Segment 3 Mission Control & Fullscreen 3D FPV Interface
-├── package.json               # Project manifest and start scripts
-├── README.md                  # Segment 3 documentation
-├── css/
-│   └── styles.css             # Fullscreen 3D HUD, slide-in side popup, and tactical styling
-├── js/
-│   ├── baseData.js            # NASA subsystems, landing sites, and challenge configs
-│   ├── audio.js               # Procedural Web Audio API sound synthesizer & door servos
-│   ├── baseVisualizer.js      # 2D Canvas visualizer (Exterior landscape & Interior blueprint)
-│   ├── gazeboPhysics.js       # Gazebo-grade contact physics engine (0.38g, solid colliders, door state)
-│   ├── threeBaseRenderer.js   # Three.js 3D Fullscreen Base Renderer (Greenhouse dome, blast door, lab desks)
-│   ├── contract.js            # BroadcastChannel / DOM event bus for Section 1.4 events
-│   ├── segment3App.js         # Segment 3 UI controller, side popup manager, and repair engine
-│   ├── segment3Contract.js    # Typed helper functions and constants for Segment 2 / 4 / 6 integration
-│   └── vendor/
-│       ├── three.min.js       # Standalone Three.js r128 engine
-│       └── three.module.js    # Local Three.js ES module
-└── physics/
-    ├── base_habitat.world     # Gazebo 11 / Ignition Gazebo XML SDF world description
-    └── astronaut_kinematics.sdf # Gazebo astronaut capsule collider definition
-```
+
+Test coverage includes:
+* **T-01:** Baseline resource consumption rates at Valles Marineris.
+* **T-02:** North Polar Ice Cap ice access advantage and heating loads.
+* **T-03:** Olympus Mons water deficit and 98% brine processor recovery.
+* **T-04:** Global dust storm solar collapse and Kilopower fission persistence.
+* **T-06:** Airlock seal decompression, bulkhead isolation, and repair.
+* **T-09:** Musculoskeletal conditioning debt accumulation and CH penalty.
+* **T-10:** Automatic electrical load shedding cascades (40%, 25%, 10%, 0%).
+* **T-11 / T-12:** Sol 30 mission handover grading.
 
 ---
 
-## ⚡ Quick Start & Running Locally
+## 🛠️ Running the Application
 
-Because Segment 3 uses modern standard web standards (WebGL Three.js, ES Modules, Web Audio API), it can be run with zero build step:
+Serve the application locally with any standard static HTTP server:
 
-```powershell
+```bash
+# Option 1: Python
 python -m http.server 3000
+
+# Option 2: Node.js serve
+npx serve .
 ```
-Then open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
----
-
-## 🔗 Shared Contract Integration (Section 1.4)
-
-```javascript
-import { sendSiteSelected, sendBaseIssueRaised, onChallengeSelected, onBaseIssueFixed } from './js/segment3Contract.js';
-
-// Segment 2 -> Segment 3: User selected a landing site
-sendSiteSelected('valles_marineris');
-
-// Segment 4 -> Segment 3: Inject emergency malfunction
-sendBaseIssueRaised('eclss_module', { title: 'Electrolyzer Membrane Tear' });
-
-// Segment 3 -> Segment 4: Random challenge assigned on launch
-onChallengeSelected((payload) => {
-  console.log('Segment 4 received challenge:', payload.challengeType);
-});
-
-// Segment 3 -> Segment 4: Module repaired by astronaut in 3D
-onBaseIssueFixed((payload) => {
-  console.log('Segment 4 received repair confirmation for:', payload.locationId);
-});
-```
+Open `http://localhost:3000` in any modern WebGL-compatible browser.
