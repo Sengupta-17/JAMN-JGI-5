@@ -1,0 +1,65 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo Model: Astronaut First-Person Kinematic Agent
+  Dimensions: Height 1.82m, Radius 0.38m (spacesuit envelope)
+  Contact friction and restitution for smooth sliding on bulkheads.
+-->
+<sdf version="1.6">
+  <model name="astronaut_agent">
+    <pose>0 -8 0.91 0 0 1.5707</pose>
+    <link name="base_link">
+      <inertial>
+        <mass>85.0</mass> <!-- 85 kg human + suit mass in 0.38g -->
+        <inertia>
+          <ixx>12.5</ixx>
+          <iyy>12.5</iyy>
+          <izz>4.2</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Kinematic Capsule Collision -->
+      <collision name="astronaut_capsule">
+        <geometry>
+          <cylinder>
+            <radius>0.38</radius>
+            <length>1.82</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.65</mu>
+              <mu2>0.65</mu2>
+              <slip1>0.02</slip1>
+              <slip2>0.02</slip2>
+            </ode>
+          </friction>
+          <contact>
+            <ode>
+              <kp>1000000.0</kp>
+              <kd>50.0</kd>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.002</min_depth>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <!-- First-Person Sensor / Eye level at 1.70m -->
+      <sensor name="fpv_camera" type="camera">
+        <pose>0 0 0.78 0 0 0</pose>
+        <camera>
+          <horizontal_fov>1.4</horizontal_fov>
+          <image>
+            <width>1920</width>
+            <height>1080</height>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+        </camera>
+      </sensor>
+    </link>
+  </model>
+</sdf>

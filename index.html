@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAMN - Mars Base Operations (Segment 3)</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- MISSION HEADER -->
+  <header class="mission-header">
+    <div class="brand-section">
+      <div class="mission-logo">🚀</div>
+      <div>
+        <div class="mission-title">JUNIOR ASTRONAUT MISSION TRAINER</div>
+        <div class="mission-subtitle">SEGMENT 3 // BASE ENTRY, INFO, 3D FIRST-PERSON NAVIGATION & CHALLENGES</div>
+      </div>
+    </div>
+
+    <!-- SITE TELEMETRY SUMMARY -->
+    <div class="site-telemetry-strip">
+      <div><span class="telem-label">SITE:</span><span id="headerSiteName" class="telem-val">Valles Marineris</span></div>
+      <div><span class="telem-label">COORDS:</span><span id="headerCoordinates" class="telem-val">14.0°S, 301.0°E</span></div>
+      <div><span class="telem-label">TEMP:</span><span id="headerSurfaceTemp" class="telem-val">-70°C to +5°C</span></div>
+      <div><span class="telem-label">ATM:</span><span id="headerAtmosphere" class="telem-val">0.95 kPa</span></div>
+      <div><span class="telem-label">PHYSICS:</span><span class="telem-val" style="color: #38bdf8;">0.38g GAZEBO</span></div>
+    </div>
+
+    <div class="header-controls">
+      <button id="btnMuteAudio" class="btn-tactical">🔊 AUDIO: ACTIVE</button>
+    </div>
+  </header>
+
+  <!-- GLOBAL ALARM BANNER -->
+  <div id="globalAlarmBanner" class="alarm-banner hidden"></div>
+
+  <!-- STRICTLY 4 BASE PARAMETERS HUD -->
+  <div class="parameters-hud-bar">
+    <div id="baseParametersHUD" class="parameters-grid">
+      <!-- Populated dynamically: Oxygen, Food, Water, Power -->
+    </div>
+  </div>
+
+  <!-- SEGMENT 3 NAVIGATION TABS -->
+  <nav class="segment-nav-tabs">
+    <button class="nav-tab-btn active-tab" data-target-screen="base_entry">1. BASE ENTRY</button>
+    <button class="nav-tab-btn" data-target-screen="base_info">2. BASE INFO</button>
+    <button class="nav-tab-btn" data-target-screen="base_nav">3. 3D BASE EXPLORATION & REPAIR</button>
+    <button class="nav-tab-btn" data-target-screen="challenge_select">4. CHALLENGE BRIEFING</button>
+  </nav>
+
+  <!-- MAIN WORKSPACE STAGE -->
+  <main class="main-stage-container">
+
+    <!-- SCREEN A: BASE ENTRY -->
+    <section id="screen_base_entry" class="screen-panel active-screen">
+      <div class="entry-layout">
+        <div class="visualizer-card">
+          <canvas id="exteriorCanvas"></canvas>
+          <div class="visualizer-overlay-info">
+            <div class="entry-brief">
+              <h2>SURFACE HABITAT ALPHA-1 // INGRESS READY</h2>
+              <p>Touchdown confirmed on Martian soil. The pressurized inflatable habitat and 3D-printed regolith storm shell are fully sealed. Initiate airlock cycle to enter the base in full First-Person 3D view.</p>
+            </div>
+            <button id="btnEnterBase" class="btn-primary-action">
+              🚪 INITIATE AIRLOCK INGRESS
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN B: BASE INFO -->
+    <section id="screen_base_info" class="screen-panel">
+      <div class="info-layout">
+        <div class="info-column">
+          <div class="info-card">
+            <h3>MARTIAN SITE PROFILE & SENSOR TELEMETRY</h3>
+            <div class="info-site-facts">
+              <div class="fact-row">
+                <span class="fact-label">GEOLOGICAL REGION:</span>
+                <span id="infoSiteName" class="fact-val">Valles Marineris (Coprates Chasma)</span>
+              </div>
+              <div class="fact-row">
+                <span class="fact-label">SURFACE ELEVATION:</span>
+                <span id="infoElevation" class="fact-val">-7.0 km below datum</span>
+              </div>
+              <div class="fact-row">
+                <span class="fact-label">ATMOSPHERIC DENSITY:</span>
+                <span id="infoAtmosphere" class="fact-val">0.95 kPa (95.3% CO2, 2.6% N2, 1.9% Ar)</span>
+              </div>
+              <div class="fact-row">
+                <span class="fact-label">THERMAL SWING:</span>
+                <span id="infoTemp" class="fact-val">-70°C (Night) to +5°C (Day)</span>
+              </div>
+            </div>
+            <p id="infoSiteDesc" class="site-desc-text">
+              The Grand Canyon of Mars, descending 7 km into the crust. Towering cliffs offer natural radiation shielding and mild microclimates, providing a balanced starting baseline for long-duration surface habitation.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>ECLSS CLOSED-LOOP ARCHITECTURE</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+              Habitat Alpha-1 operates on an advanced closed-loop regenerative life support system engineered in collaboration with NASA and ESA. Walk through the base in first-person to inspect and interact with the physical hardware.
+            </p>
+            <button class="btn-tactical" data-target-screen="base_nav" style="width: 100%; padding: 10px; font-weight: 700;">
+              ENTER 3D FIRST-PERSON BASE →
+            </button>
+          </div>
+        </div>
+
+        <div class="info-column">
+          <div class="info-card">
+            <h3>FOUR FUNDAMENTAL BASE PARAMETERS</h3>
+            <div id="baseInfoDetailedHUD">
+              <!-- Populated dynamically: Oxygen, Food, Water, Power -->
+            </div>
+            <div style="margin-top: 16px; text-align: center;">
+              <button class="btn-primary-action" data-target-screen="challenge_select" style="width: 100%;">
+                VIEW CHALLENGE BRIEFING →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN C: BASE NAVIGATION & FIRST-PERSON 3D INTERFACE (NOW FULLSCREEN) -->
+    <section id="screen_base_nav" class="screen-panel">
+      <!-- FULLSCREEN 3D VIEWPORT -->
+      <div id="fullscreen3DWrap" class="fullscreen-3d-wrap">
+        <!-- Three.js Viewport Container -->
+        <div id="threeViewportContainer" class="three-viewport-wrap">
+          <!-- Reticle -->
+          <div class="fpv-crosshair"></div>
+          
+          <!-- Proximity Interaction Prompt -->
+          <div id="fpvInteractionPrompt" class="fpv-prompt-banner hidden">
+            PRESS [E] TO INSPECT TERMINAL
+          </div>
+
+          <!-- FPV Controls Overlay -->
+          <div id="fpvControlsHint" class="fpv-controls-hud">
+            CLICK VIEWPORT FOR MOUSE LOOK | WASD: MOVE | SPACE: 0.38g JUMP | [E]: INTERACT | TAB: MENU
+          </div>
+
+          <!-- Mini Parameter HUD overlay (top-left) -->
+          <div id="fpvMiniHUD" class="fpv-mini-hud">
+            <div class="mini-hud-row" id="miniHudOxygen"><span class="mini-icon">💨</span> <span class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudFood"><span class="mini-icon">🌱</span> <span class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudWater"><span class="mini-icon">💧</span> <span class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudPower"><span class="mini-icon">⚡</span> <span class="mini-val">--</span></div>
+          </div>
+
+          <!-- Exit fullscreen button -->
+          <button id="btnExitFullscreen3D" class="fpv-exit-btn" title="Return to tabs (TAB)">
+            ✕ EXIT 3D
+          </button>
+        </div>
+
+        <!-- SLIDE-IN SIDE POPUP for module interaction (replaces old sidebars) -->
+        <div id="sidePopupPanel" class="side-popup-panel hidden">
+          <div class="side-popup-header">
+            <span id="sidePopupTitle">SUBSYSTEM DIAGNOSTICS</span>
+            <button id="btnCloseSidePopup" class="side-popup-close">✕</button>
+          </div>
+          <div id="sidePopupContent" class="side-popup-scroll">
+            <!-- Populated dynamically when [E] is pressed near a module -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2D Canvas Blueprint (Alternate / Toggle View — not fullscreen) -->
+      <div id="canvasBlueprintWrap" class="canvas-blueprint-wrap" style="display: none;">
+        <div class="view-mode-bar">
+          <span class="view-mode-title">2D SCHEMATIC VIEW</span>
+          <div class="view-toggle-btns">
+            <button id="btnView3D" class="btn-view-toggle">3D FPV INTERIOR</button>
+            <button id="btnView2D" class="btn-view-toggle active">2D SCHEMATIC</button>
+          </div>
+        </div>
+        <canvas id="interiorCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- SCREEN D: CHALLENGE SECTION (DESCRIPTIONS ONLY // RANDOMIZED ALLOCATION) -->
+    <section id="screen_challenge_select" class="screen-panel">
+      <div class="challenge-layout">
+        <div class="challenge-header-intro">
+          <h2>MISSION CHALLENGES & HAZARD PROFILE</h2>
+          <p>
+            Review the operational challenges of Martian survival below. 
+            <span style="color: #f59e0b; font-weight: 700;">NOTE: Manual challenge selection is disabled.</span> 
+            Upon launching into Segment 4, Mission Control Houston will <strong>randomly assign</strong> your mission scenario based on incoming Mars weather and orbital telemetry.
+          </p>
+        </div>
+
+        <div id="challengeListGrid" class="challenges-grid">
+          <!-- Populated dynamically with descriptive cards -->
+        </div>
+
+        <div class="challenge-action-bar">
+          <button id="btnLaunchMission" class="btn-primary-action" style="font-size: 15px; padding: 14px 36px;">
+            🎲 LAUNCH MISSION (RANDOM CHALLENGE ASSIGNMENT) → SEGMENT 4
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN: MISSION LAUNCHED (HANDOFF TO SEGMENT 4) -->
+    <section id="screen_mission_launched" class="screen-panel">
+      <div class="launched-screen-content">
+        <div class="launched-icon">🪐</div>
+        <h2>MISSION SIMULATION LAUNCHED</h2>
+        <div id="randomChallengeRevealBox" class="random-challenge-reveal">
+          <!-- Populated dynamically with the randomly assigned challenge -->
+        </div>
+        <p>
+          Segment 3 hand-off event <code>challengeSelected(siteId, challengeType)</code> has been successfully dispatched to the Segment 4 Game Engine. Base telemetry and starting parameters have been calibrated.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 14px;">
+          <button class="btn-tactical" data-target-screen="base_nav">
+            RETURN TO 3D BASE EXPLORATION
+          </button>
+          <button class="btn-tactical" data-target-screen="base_entry">
+            RETURN TO BASE ENTRY
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AIRLOCK PRESSURIZATION MODAL -->
+  <div id="airlockModal" class="airlock-modal-overlay hidden">
+    <div class="airlock-dialog">
+      <div class="airlock-icon">🔄</div>
+      <h3>PRESSURIZATION AIRLOCK CYCLE ACTIVE</h3>
+      <div id="airlockStatusText" class="airlock-status">
+        EXTERIOR HATCH SEALED // CHECKING CONTAMINATION
+      </div>
+      <div class="airlock-progress-track">
+        <div id="airlockProgressFill" class="airlock-progress-fill"></div>
+      </div>
+      <div id="airlockPressureText" class="airlock-pressure">CHAMBER: 0.62 kPa</div>
+    </div>
+  </div>
+
+  <!-- SIMULATION / DEV TESTING DOCK -->
+  <footer class="dev-simulation-dock">
+    <div class="dock-header">
+      <span class="dock-title">SEGMENT 3 INTEGRATION TEST HARNESS</span>
+      <span style="font-size: 10px; color: var(--text-dim);">SHARED CONTRACT: SECTION 1.4 COMPLIANT</span>
+    </div>
+    <div class="dock-tools-row">
+      <span class="dock-label">TEST LANDING SITE:</span>
+      <select id="devSiteSelect" class="dock-select">
+        <option value="valles_marineris">Valles Marineris (Balanced)</option>
+        <option value="north_polar">North Polar Ice Cap (Water High, Power Low)</option>
+        <option value="olympus_mons">Olympus Mons (Power High, Oxygen/Water Low)</option>
+        <option value="hellas_basin">Hellas Basin (Oxygen High, Power Low)</option>
+      </select>
+
+      <button id="btnSimulateIssue" class="btn-dock danger">
+        ⚠️ INJECT RANDOM BASE HAZARD (Segment 4 Event)
+      </button>
+
+      <button id="btnClearIssues" class="btn-dock">
+        ✓ CLEAR ALL HAZARDS
+      </button>
+    </div>
+
+    <!-- EVENT STREAM LOG -->
+    <div id="eventLogStream" class="event-log-drawer">
+      <!-- Live Contract Events appear here -->
+    </div>
+  </footer>
+
+  <!-- STANDALONE THREE.JS ENGINE -->
+  <script src="js/vendor/three.min.js"></script>
+  <script type="module" src="js/segment3App.js"></script>
+</body>
+</html>
