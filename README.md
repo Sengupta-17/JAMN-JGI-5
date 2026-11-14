@@ -22,6 +22,15 @@ Production implementation of **Segment 3** (Base Operations, 3D First-Person Ing
 * **Automatic Load Shedding Cascades:** Realistic degradation across 40%, 25%, 10%, and 0% blackout thresholds.
 * **30-Sol Diurnal Simulation Clock:** 60 seconds real-time per sol (42s Day / 18s Night, ~30 minutes total play) with continuous sub-tick integration.
 * **Crew Economy & Conditioning Debt:** 20 discretionary Crew-Hours (CH) pool per sol. Skipping the daily 5 CH exercise countermeasure accumulates conditioning debt, reducing future CH and increasing external EVA repair costs.
+* **Simulation Pause Option:** Dedicated Pause button (`#btnPauseSimulation`) and keyboard shortcut (`P`). Halts surface physics, rover dynamics, and resource consumption without penalty.
+* **Daily Return to Base & Re-launch Loop:**
+  - Upon completing a 60-second sol, the surface simulation concludes and displays the End-of-Sol summary modal.
+  - The astronaut is returned to the base habitat (`Base Info`), where the new **30-Sol Expedition Timeline & Sol Tracker Graphic** illuminates the current sol and progress.
+  - Hardware modules can be inspected and repaired in 3D first-person navigation (`Base Exploration`).
+  - Advancing to the next day is done through the **Challenges Section**, where a **fresh random challenge scenario is rolled for each new day**, keeping gameplay dynamic across all 30 sols.
+* **In-Memory Expedition Persistence:**
+  - Active resource reserves, module health, conditioning debt, and cumulative radiation dose persist seamlessly in browser memory across daily transitions.
+  - Reloading the browser page restarts the expedition from Day 1.
 * **7 Modular Environmental Hazards:** Water scarcity, food production failure, subzero cold snaps, chronic/SPE radiation, low gravity, regional/global dust storms, and thin atmosphere seal decompression.
 * **3D Mars Surface Simulation:**
   - Multi-chunk procedural terrain streaming with continuous Level of Detail (LOD) and gap-free skirts.
@@ -52,6 +61,7 @@ Production implementation of **Segment 3** (Base Operations, 3D First-Person Ing
 | **A / D** or **Left / Right** | Rover steering / Astronaut turn |
 | **Spacebar** | Low-gravity leap ($0.38g$, in Astronaut EVA view) |
 | **[V] Key** | Toggle camera mode: **Rover Chase** $\to$ **Astronaut EVA** $\to$ **Tactical Orbit** |
+| **[P] Key** | Pause / Resume surface simulation |
 
 ---
 

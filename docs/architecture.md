@@ -69,9 +69,19 @@ index.html (Single Page App Container)
   - $< 10\%$: Emergency life support only; ECLSS factor falls $0.8 \to 0$; heating at $25\%$.
   - $0\%$: Electrical blackout; failure declared if unrecovered before sol end.
 
-### 4.2 Simulation Loop (`js/engine/simulationLoop.js`)
-* **Diurnal Pacing:** 30 Martian sols total. 60 seconds real-time per sol (42 seconds Day phase / 18 seconds Night phase), achieving ~30 minutes of active gameplay.
+### 4.2 Simulation Loop & Daily Progression (`js/engine/simulationLoop.js`)
+* **Diurnal Pacing (§4.5.4):** 30 Martian sols total. 60 seconds real-time per sol (42 seconds Day phase / 18 seconds Night phase), achieving ~30 minutes of active gameplay.
 * **Continuous Sub-Tick Integration:** Smoothly integrates derivatives at display refresh rates.
+* **Simulation Pause Option:** Dedicated Pause/Resume control (`#btnPauseSimulation` and `P` key shortcut). Freezes clock progression, rover kinematics, and resource integration, displaying the tactical `#surfacePauseOverlay` without draining resources.
+* **Daily Return to Base & Re-launch Loop:**
+  - Upon completing a 60-second sol cycle, the surface simulation concludes and displays the End-of-Sol modal (`#solCompletedModal`).
+  - The astronaut returns to the base habitat (`base_info`), where the new 30-Sol Expedition Timeline & Sol Tracker Graphic illuminates the current sol and progress.
+  - The astronaut can physically inspect and repair damaged modules inside the 3D base habitat (`base_nav`).
+  - To advance to the next sol ($N+1$), the user launches through the **Challenges Section** (`challenge_select`).
+  - A **fresh random challenge scenario is drawn for each new day**, ensuring dynamic operational variety across the 30-sol expedition rather than repeating a single static challenge.
+* **In-Memory Expedition State:**
+  - Active reserves, module health, conditioning debt, and cumulative radiation dose persist seamlessly in browser memory across daily transitions.
+  - The expedition restarts from Day 1 if and only if the user reloads the browser tab.
 * **Crew-Hour (CH) Economy:** 20 discretionary Crew-Hours per sol for the 4-person team. Deducts CH for maintenance, countermeasure sessions, and repair operations.
 * **Failure Evaluation:** Detects depletion of any resource ($0\%$ Oxygen, Food, Water, or Power blackout).
 * **Handover Grading at Sol 30:**

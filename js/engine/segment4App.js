@@ -94,6 +94,27 @@ export class Segment4App {
         contractBus.emit('retryRequested', { siteId: this.siteId, challengeType: this.challengeType });
       });
     }
+
+    // Simulation Pause / Resume handlers
+    const btnPause = document.getElementById('btnPauseSimulation');
+    if (btnPause) {
+      btnPause.addEventListener('click', () => {
+        this.togglePause();
+      });
+    }
+
+    const btnResumeOverlay = document.getElementById('btnResumeOverlay');
+    if (btnResumeOverlay) {
+      btnResumeOverlay.addEventListener('click', () => {
+        this.togglePause();
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyP' && document.getElementById('screen_game_engine')?.classList.contains('active-screen')) {
+        this.togglePause();
+      }
+    });
   }
 
   setupContractEvents() {
@@ -136,9 +157,80 @@ export class Segment4App {
       this.showMorningBriefing(data);
     });
 
+    this.loop.onSolCompleteCallbacks.push((data) => {
+      this.handleSolComplete(data);
+    });
+
     this.loop.onGameOverCallbacks.push((data) => {
       this.showHandoverModal(data);
     });
+  }
+
+  togglePause() {
+    const isPaused = this.loop.togglePause();
+    const btnPause = document.getElementById('btnPauseSimulation');
+    const overlay = document.getElementById('surfacePauseOverlay');
+
+    if (btnPause) {
+      btnPause.textContent = isPaused ? '▶️ RESUME' : '⏸️ PAUSE';
+      btnPause.classList.toggle('paused', isPaused);
+    }
+
+    if (overlay) {
+      if (isPaused) {
+        const pauseSolEl = document.getElementById('pauseSolVal');
+        if (pauseSolEl) pauseSolEl.textContent = String(this.loop.currentSol).padStart(2, '0');
+        const pausePhaseEl = document.getElementById('pausePhaseVal');
+        if (pausePhaseEl) pausePhaseEl.textContent = this.loop.currentPhase.toUpperCase();
+        const pauseSecEl = document.getElementById('pauseSecondsVal');
+        if (pauseSecEl) {
+          const rem = Math.ceil(
+            (this.loop.currentPhase === 'day')
+              ? (this.loop.dayDurationSeconds - this.loop.solTimeElapsed)
+              : (this.loop.solDurationSeconds - this.loop.solTimeElapsed)
+          );
+          pauseSecEl.textContent = `${rem}s`;
+        }
+        overlay.classList.remove('hidden');
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    this.showActionNotice(isPaused ? 'Simulation paused.' : 'Simulation resumed.', !isPaused);
+  }
+
+  handleSolComplete(data) {
+    const modal = document.getElementById('solCompletedModal');
+    if (!modal) return;
+
+    const solNumEl = document.getElementById('completedSolNumber');
+    if (solNumEl) solNumEl.textContent = String(data.completedSol).padStart(2, '0');
+
+    const nextSolNumEl = document.getElementById('nextSolNumber');
+    if (nextSolNumEl) nextSolNumEl.textContent = String(data.nextSol).padStart(2, '0');
+
+    const statsEl = document.getElementById('completedSolStats');
+    if (statsEl) {
+      statsEl.innerHTML = `
+        <div class="completed-stat-box"><span>OXYGEN</span><strong>${data.parameters.oxygen.toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>FOOD</span><strong>${data.parameters.food.toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>WATER</span><strong>${data.parameters.water.toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>POWER</span><strong>${data.parameters.power.toFixed(1)}%</strong></div>
+      `;
+    }
+
+    modal.classList.remove('hidden');
+
+    const btnReturn = document.getElementById('btnReturnToBaseAfterSol');
+    if (btnReturn) {
+      btnReturn.onclick = () => {
+        modal.classList.add('hidden');
+        if (window.jamnSegment3App) {
+          window.jamnSegment3App.setScreen('base_info');
+        }
+      };
+    }
   }
 
   startMission() {
@@ -152,28 +244,44 @@ export class Segment4App {
     const engineTab = document.querySelector('.nav-tab-btn[data-target-screen="game_engine"]');
     if (engineTab) engineTab.classList.add('active-tab');
 
+    // Reset pause state on new sol launch
+    const btnPause = document.getElementById('btnPauseSimulation');
+    if (btnPause) {
+      btnPause.textContent = '⏸️ PAUSE';
+      btnPause.classList.remove('paused');
+    }
+    const overlay = document.getElementById('surfacePauseOverlay');
+    if (overlay) overlay.classList.add('hidden');
+
     // Initialize 3D Surface Simulator if not already created
     const surfaceContainer = document.getElementById('surfaceSimulatorContainer');
     if (surfaceContainer && !this.surfaceSim) {
       this.surfaceSim = new MarsSurfaceSimulator(surfaceContainer);
     }
 
-    // Configure challenge & reset engine
-    this.engine.reset(this.siteId);
+    // Configure challenge scenario for this sol
     this.hazards.setChallenge(this.challengeType);
-    this.loop.reset();
-    this.loop.start();
 
-    // Broadcast gameStarted
-    contractBus.emit('gameStarted', {
-      siteId: this.siteId,
-      challengeType: this.challengeType,
-      day: 1,
-      phase: 'day',
-      parameters: { ...this.engine.parameters }
-    });
+    // If starting from Day 1 for the first time, initialize parameters from site baseline
+    if (!this.missionStarted || this.loop.currentSol === 1) {
+      this.missionStarted = true;
+      this.engine.reset(this.siteId);
+      this.loop.reset();
+      this.loop.startSol(1);
 
-    this.showActionNotice(`Mission launched at ${SITE_MODIFIERS[this.siteId].name}. Scenario: ${this.challengeType.toUpperCase()}`, true);
+      contractBus.emit('gameStarted', {
+        siteId: this.siteId,
+        challengeType: this.challengeType,
+        day: 1,
+        phase: 'day',
+        parameters: { ...this.engine.parameters }
+      });
+    } else {
+      // Continuing into next sol with preserved memory of resources and module health!
+      this.loop.startSol(this.loop.currentSol);
+    }
+
+    this.showActionNotice(`Sol ${this.loop.currentSol} launched at ${SITE_MODIFIERS[this.siteId].name}. Scenario: ${this.challengeType.toUpperCase()}`, true);
   }
 
   updateHUD(data) {

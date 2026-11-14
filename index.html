@@ -23,6 +23,7 @@
 
     <!-- SITE TELEMETRY SUMMARY -->
     <div class="site-telemetry-strip">
+      <div><span class="telem-label">EXPEDITION:</span><span id="headerSolDisplay" class="telem-val" style="color: #f59e0b; font-weight: 700;">SOL 01 / 30</span></div>
       <div><span class="telem-label">SITE:</span><span id="headerSiteName" class="telem-val">Valles Marineris</span></div>
       <div><span class="telem-label">COORDS:</span><span id="headerCoordinates" class="telem-val">14.0°S, 301.0°E</span></div>
       <div><span class="telem-label">TEMP:</span><span id="headerSurfaceTemp" class="telem-val">-70°C to +5°C</span></div>
@@ -78,6 +79,58 @@
     <!-- SCREEN B: BASE INFO -->
     <section id="screen_base_info" class="screen-panel">
       <div class="info-layout">
+        
+        <!-- NEW GRAPHIC: 30-SOL MISSION EXPEDITION TIMELINE & CURRENT DAY -->
+        <div class="info-card sol-expedition-card" style="grid-column: 1 / -1;">
+          <div class="expedition-header">
+            <div>
+              <span class="expedition-subtitle">MARTIAN EXPEDITION LOG // CALIBRATED MISSION TIMELINE</span>
+              <h3 style="color: var(--text-main); margin-top: 2px;">30-SOL EXPEDITION PROGRESSION & TELEMETRY</h3>
+            </div>
+            <div class="current-sol-hero">
+              <span class="sol-hero-label">CURRENT ACTIVE DAY</span>
+              <span class="sol-hero-number" id="baseInfoSolHero">SOL 01 / 30</span>
+            </div>
+          </div>
+
+          <div class="expedition-body">
+            <!-- Graphical Radial Sol Gauge -->
+            <div class="sol-gauge-visual">
+              <div class="sol-ring-graphic">
+                <svg viewBox="0 0 100 100" class="sol-svg-ring">
+                  <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+                  <circle id="solRingFill" class="ring-fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="255"></circle>
+                </svg>
+                <div class="ring-inner-text">
+                  <span id="baseInfoDialNum" class="ring-num">01</span>
+                  <span class="ring-label">SOL</span>
+                </div>
+              </div>
+              <div class="sol-dial-stats">
+                <div><span class="stat-lbl">SOLS COMPLETED:</span> <strong id="baseInfoSolsCompleted">0</strong> sols</div>
+                <div><span class="stat-lbl">SOLS REMAINING:</span> <strong id="baseInfoSolsRemaining">30</strong> sols</div>
+                <div><span class="stat-lbl">CYCLE DURATION:</span> <strong>60s / sol</strong></div>
+                <div><span class="stat-lbl">RESET RULE:</span> <span style="color: var(--text-muted); font-size: 10px;">Browser reload restarts from Day 1</span></div>
+              </div>
+            </div>
+
+            <!-- 30-Sol Tactical Matrix Grid -->
+            <div class="sol-matrix-wrap">
+              <div class="matrix-heading">
+                <span>30-SOL EXPEDITION GRID</span>
+                <span class="matrix-legend">
+                  <span class="leg-item"><span class="leg-dot done"></span> Done</span>
+                  <span class="leg-item"><span class="leg-dot active"></span> Current</span>
+                  <span class="leg-item"><span class="leg-dot future"></span> Remaining</span>
+                </span>
+              </div>
+              <div id="baseInfoSolMatrixGrid" class="sol-matrix-grid">
+                <!-- Dynamically populated 1..30 sol badges -->
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="info-column">
           <div class="info-card">
             <h3>MARTIAN SITE PROFILE & SENSOR TELEMETRY</h3>
@@ -260,6 +313,7 @@
           </div>
 
           <div class="engine-header-actions">
+            <button id="btnPauseSimulation" class="btn-tactical pause-btn" title="Pause simulation (P)">⏸️ PAUSE</button>
             <button id="btnOpenBriefingModal" class="btn-tactical">📋 SOL BRIEFING</button>
           </div>
         </div>
@@ -342,7 +396,24 @@
           <div class="surface-viewport-overlay">
             <div class="camera-controls-cluster">
               <button id="btnToggleSurfaceCamera" class="btn-overlay-tag">VIEW: ROVER CHASE (V)</button>
-              <span class="overlay-hint">WASD: DRIVE/WALK | SPACE: 0.38g JUMP | V: CAMERA VIEW</span>
+              <span class="overlay-hint">WASD: DRIVE/WALK | SPACE: 0.38g JUMP | V: CAMERA | P: PAUSE</span>
+            </div>
+          </div>
+
+          <!-- Tactical Surface Pause Overlay -->
+          <div id="surfacePauseOverlay" class="surface-pause-overlay hidden">
+            <div class="pause-card">
+              <div class="pause-icon">⏸️</div>
+              <h3>SURFACE SIMULATION PAUSED</h3>
+              <p>Martian surface physics, rover dynamics, and resource consumption are suspended.</p>
+              <div class="pause-stats-row">
+                <div>SOL: <strong id="pauseSolVal" style="color: #f59e0b;">01</strong> / 30</div>
+                <div>PHASE: <strong id="pausePhaseVal" style="color: #38bdf8;">DAY</strong></div>
+                <div>CYCLE REMAINING: <strong id="pauseSecondsVal" style="color: #10b981;">42s</strong></div>
+              </div>
+              <button id="btnResumeOverlay" class="btn-primary-action" style="padding: 10px 28px; margin-top: 14px; width: 100%;">
+                ▶️ RESUME SIMULATION (P)
+              </button>
             </div>
           </div>
         </div>
@@ -448,6 +519,30 @@
         <div id="airlockProgressFill" class="airlock-progress-fill"></div>
       </div>
       <div id="airlockPressureText" class="airlock-pressure">CHAMBER: 0.62 kPa</div>
+    </div>
+  </div>
+
+  <!-- SOL COMPLETED / END OF DAY MODAL (DAILY RETURN TO BASE) -->
+  <div id="solCompletedModal" class="airlock-modal-overlay hidden">
+    <div class="sol-completed-dialog">
+      <div class="completed-icon">🌙</div>
+      <div class="completed-badge">MARTIAN SOL CYCLE CONCLUDED</div>
+      <h2>SOL <span id="completedSolNumber">01</span> COMPLETE</h2>
+      <p class="completed-desc">
+        Nightfall has fallen over the landing site. Surface EVA and rover operations are sealed for the sol. 
+        Telemetry and resource buffers have been synchronized with Base Alpha-1.
+      </p>
+
+      <div id="completedSolStats" class="completed-stats-row">
+        <!-- Filled with ending Oxygen, Food, Water, Power -->
+      </div>
+
+      <div class="completed-next-step">
+        <p>Return to the base habitat to review updated Sol telemetry, inspect hardware modules, and launch <strong>Sol <span id="nextSolNumber">02</span></strong> with a fresh daily operational challenge!</p>
+        <button id="btnReturnToBaseAfterSol" class="btn-primary-action" style="padding: 12px 32px; font-size: 14px; margin-top: 10px;">
+          🚪 ENTER BASE HABITAT & PREPARE NEXT SOL →
+        </button>
+      </div>
     </div>
   </div>
 

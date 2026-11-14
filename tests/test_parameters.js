@@ -151,4 +151,4 @@ console.log('--- RUNNING SEGMENT 4 SCIENTIFIC ACCEPTANCE TEST SUITE ---\n');
 }
 
 console.log(`\nTEST SUMMARY: ${passed} Passed, ${failed} Failed.`);
-if (failed > 0) process.exit(1);
+process.exit(failed > 0 ? 1 : 0);

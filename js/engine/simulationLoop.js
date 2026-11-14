@@ -31,6 +31,7 @@ export class SimulationLoop {
     // Event listeners
     this.onTickCallbacks = [];
     this.onSolChangeCallbacks = [];
+    this.onSolCompleteCallbacks = [];
     this.onGameOverCallbacks = [];
 
     // Internal ticker
@@ -66,6 +67,15 @@ export class SimulationLoop {
   }
 
   start() {
+    this.startSol(this.currentSol);
+  }
+
+  startSol(sol) {
+    if (sol !== undefined) {
+      this.currentSol = sol;
+    }
+    this.solTimeElapsed = 0;
+    this.currentPhase = 'day';
     this.isRunning = true;
     this.isPaused = false;
     this.isGameOver = false;
@@ -86,6 +96,17 @@ export class SimulationLoop {
     }
   }
 
+  togglePause() {
+    if (this.isPaused) {
+      this.resume();
+      return false; // now unpaused
+    } else if (this.isRunning && !this.isGameOver) {
+      this.pause();
+      return true; // now paused
+    }
+    return this.isPaused;
+  }
+
   reset() {
     this.isRunning = false;
     this.isPaused = false;
@@ -104,7 +125,11 @@ export class SimulationLoop {
 
     this.crewHoursRemaining = 20;
     if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        cancelAnimationFrame(this.animationFrameId);
+      } else {
+        clearTimeout(this.animationFrameId);
+      }
       this.animationFrameId = null;
     }
   }
@@ -148,7 +173,11 @@ export class SimulationLoop {
 
     this.update(dtSeconds);
 
-    this.animationFrameId = requestAnimationFrame(() => this.loop());
+    if (typeof requestAnimationFrame !== 'undefined') {
+      this.animationFrameId = requestAnimationFrame(() => this.loop());
+    } else {
+      this.animationFrameId = setTimeout(() => this.loop(), 16);
+    }
   }
 
   update(dtSeconds) {
@@ -193,14 +222,31 @@ export class SimulationLoop {
 
     // Check for Sol completion (60 seconds)
     if (this.solTimeElapsed >= this.solDurationSeconds) {
-      this.solTimeElapsed -= this.solDurationSeconds;
-      this.currentSol++;
+      this.solTimeElapsed = 0;
+      const completedSol = this.currentSol;
 
-      if (this.currentSol > 30) {
+      if (completedSol >= 30) {
         // Mission successfully reached Sol 30! Evaluate handover
         this.evaluateMissionHandover();
       } else {
-        this.initSol(this.currentSol);
+        // Daily cycle completed! Stop surface run, advance sol counter, and trigger return to base
+        this.isRunning = false;
+        this.currentSol++;
+
+        const summary = {
+          completedSol,
+          nextSol: this.currentSol,
+          parameters: { ...this.engine.parameters },
+          radiationDose_mSv: this.engine.radiationDose_mSv
+        };
+
+        if (this.bus) {
+          this.bus.emit('dayCompleted', summary);
+        }
+
+        for (const cb of this.onSolCompleteCallbacks) {
+          cb(summary);
+        }
       }
     }
   }

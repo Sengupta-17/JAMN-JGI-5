@@ -57,6 +57,17 @@ Emitted at the start of each Sol (every 60 seconds).
 }
 ```
 
+### 2.5 `dayCompleted` (Segment 4 $\to$ System / UI)
+Emitted when a Sol finishes its 60-second cycle, triggering return to base and preparation for the next sol.
+```javascript
+{
+  completedSol: 1,
+  nextSol: 2,
+  parameters: { oxygen: 69.8, food: 73.3, water: 66.6, power: 73.6 },
+  radiationDose_mSv: 0.66
+}
+```
+
 ### 2.5 `baseIssueRaised` (Segment 4 $\to$ Segment 3)
 Emitted when a physical subsystem failure or environmental hazard occurs.
 ```javascript

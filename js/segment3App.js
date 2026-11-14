@@ -122,6 +122,16 @@ export class Segment3App {
       this.setSite(siteId);
       this.setScreen('base_entry');
       this.logEvent('EVENT_RECV', `retryRequested. Reset to Base Entry`);
+      this.renderSolTrackerGraphic();
+    });
+
+    // Inputs: dayStarted and dayCompleted from Segment 4
+    contractBus.on('dayStarted', () => {
+      this.renderSolTrackerGraphic();
+    });
+
+    contractBus.on('dayCompleted', () => {
+      this.renderSolTrackerGraphic();
     });
   }
 
@@ -342,24 +352,26 @@ export class Segment3App {
     
     const randomChallenge = CHALLENGE_TYPES[Math.floor(Math.random() * CHALLENGE_TYPES.length)];
     this.assignedChallenge = randomChallenge;
+    const currentSol = window.jamnSegment4App?.loop?.currentSol || 1;
 
     const payload = {
       siteId: this.currentSiteId,
       challengeType: randomChallenge.id,
       challengeTitle: randomChallenge.title,
+      sol: currentSol,
       startingParameters: { ...this.baseParams },
       timestamp: Date.now()
     };
 
     contractBus.emit('challengeSelected', payload);
-    this.logEvent('EVENT_SENT', `challengeSelected: site=${this.currentSiteId}, challenge=${randomChallenge.id}`);
+    this.logEvent('EVENT_SENT', `challengeSelected (Sol ${currentSol}): site=${this.currentSiteId}, challenge=${randomChallenge.id}`);
 
     // Populate randomized challenge reveal box
     const revealBox = document.getElementById('randomChallengeRevealBox');
     if (revealBox) {
       revealBox.innerHTML = `
-        <div class="reveal-badge">MISSION SCENARIO ENCRYPTED ALLOCATION</div>
-        <h3 class="reveal-title">ASSIGNED CHALLENGE: ${randomChallenge.title.toUpperCase()}</h3>
+        <div class="reveal-badge">SOL ${String(currentSol).padStart(2, '0')} SCENARIO ENCRYPTED ALLOCATION</div>
+        <h3 class="reveal-title">SOL ${String(currentSol).padStart(2, '0')} CHALLENGE: ${randomChallenge.title.toUpperCase()}</h3>
         <div class="reveal-diff">DIFFICULTY: ${randomChallenge.difficulty.toUpperCase()}</div>
         <p class="reveal-brief">${randomChallenge.briefing}</p>
         <div class="reveal-hazards">
@@ -549,6 +561,70 @@ export class Segment3App {
     this.renderModuleDetails();
     this.renderChallengeList();
     this.renderAlarmBanner();
+    this.renderSolTrackerGraphic();
+  }
+
+  // Render 30-Sol Expedition Timeline & Sol Tracker Graphic
+  renderSolTrackerGraphic() {
+    const currentSol = window.jamnSegment4App?.loop?.currentSol || 1;
+    const completedSols = Math.max(0, currentSol - 1);
+    const remainingSols = Math.max(0, 30 - completedSols);
+
+    // Update Header Sol Display
+    const headerSol = document.getElementById('headerSolDisplay');
+    if (headerSol) headerSol.textContent = `SOL ${String(currentSol).padStart(2, '0')} / 30`;
+
+    // Update Base Info Hero Display
+    const solHero = document.getElementById('baseInfoSolHero');
+    if (solHero) solHero.textContent = `SOL ${String(currentSol).padStart(2, '0')} / 30`;
+
+    const dialNum = document.getElementById('baseInfoDialNum');
+    if (dialNum) dialNum.textContent = String(currentSol).padStart(2, '0');
+
+    const solsComp = document.getElementById('baseInfoSolsCompleted');
+    if (solsComp) solsComp.textContent = completedSols;
+
+    const solsRem = document.getElementById('baseInfoSolsRemaining');
+    if (solsRem) solsRem.textContent = remainingSols;
+
+    // Update SVG Ring fill
+    const ringFill = document.getElementById('solRingFill');
+    if (ringFill) {
+      const circumference = 264; // 2 * PI * 42
+      const progressFraction = Math.min(1.0, currentSol / 30.0);
+      const offset = circumference * (1.0 - progressFraction);
+      ringFill.style.strokeDashoffset = offset;
+    }
+
+    // Populate 30-Sol Tactical Matrix Grid
+    const matrixGrid = document.getElementById('baseInfoSolMatrixGrid');
+    if (matrixGrid) {
+      let html = '';
+      for (let s = 1; s <= 30; s++) {
+        let nodeClass = 'future';
+        let label = String(s).padStart(2, '0');
+        if (s < currentSol) {
+          nodeClass = 'completed';
+          label = `✓ ${s}`;
+        } else if (s === currentSol) {
+          nodeClass = 'active';
+          label = `● ${s}`;
+        }
+        html += `<div class="matrix-sol-node ${nodeClass}" title="Sol ${s}"><span>${label}</span></div>`;
+      }
+      matrixGrid.innerHTML = html;
+    }
+
+    // Update Challenge Section button text to reflect the current Sol
+    const btnLaunch = document.getElementById('btnLaunchMission');
+    if (btnLaunch) {
+      btnLaunch.innerHTML = `🎲 LAUNCH SOL ${String(currentSol).padStart(2, '0')} MISSION (RANDOM CHALLENGE ASSIGNMENT) → SEGMENT 4`;
+    }
+
+    const btnDirect = document.getElementById('btnEnterSegment4Direct');
+    if (btnDirect) {
+      btnDirect.innerHTML = `🎮 ENTER SOL ${String(currentSol).padStart(2, '0')} MARS SURFACE SIMULATION (SEGMENT 4) →`;
+    }
   }
 
   // Base resource parameters HUD
