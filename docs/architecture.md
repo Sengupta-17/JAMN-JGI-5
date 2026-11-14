@@ -106,3 +106,14 @@ index.html (Single Page App Container)
 * **Surface Astronaut Locomotion (`physics/surfacePhysics.js`):** $0.38g$ surface clamping, terrain friction, and low-gravity leaping.
 * **Diurnal Atmosphere & Sky (`graphics/marsAtmosphere.js`):** Realistic Martian sky colors (salmon day, blue-violet twilight sunset, deep space night starfield) with directional sun light orbiting dynamically with the 60s sol clock.
 * **GPU Dust Storm Blizzard (`graphics/dustStormVFX.js`):** 3,000+ particle system with turbulence, drift velocity, and opacity dynamically scaling with atmospheric optical depth $\tau$.
+
+### 4.5 Pause Lifecycle & Daily Base Return Loop (`js/engine/segment4App.js`)
+* **Simulation Pause State:** Suspends resource integration, sol clock countdown, 3D rover dynamics, and particle updates.
+* **Pause Trigger & Resume Paths:**
+  - Pause is toggled via the dedicated top-right control (`#btnPauseSimulation`, adjacent to the Sol Briefing button) or the `[P]` keyboard shortcut.
+  - Resume can be triggered via the overlay card's primary action (`#btnResumeOverlay`), the top-right button, `[P]`, or `[Escape]`.
+  - The tactical pause overlay (`#surfacePauseOverlay`) is strictly hidden upon entering Segment 4 via `.hidden` (`display: none !important; pointer-events: none !important;`), preventing viewport occlusion or interaction blocking.
+* **Daily Base Return & Challenge Rotation:**
+  - Upon completing a 60-second sol cycle, the user is transitioned back to the Martian habitat (`base_info`).
+  - The base updates the 30-Sol Expedition Timeline & Sol Tracker Graphic with retained resource state and health telemetry.
+  - The subsequent Sol is launched through the Challenges section, ensuring fresh, randomized hazard allocations across the 30-sol campaign.
