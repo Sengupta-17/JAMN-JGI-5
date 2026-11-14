@@ -98,23 +98,35 @@ export class Segment4App {
     // Simulation Pause / Resume handlers
     const btnPause = document.getElementById('btnPauseSimulation');
     if (btnPause) {
-      btnPause.addEventListener('click', () => {
+      btnPause.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.togglePause();
       });
     }
 
     const btnResumeOverlay = document.getElementById('btnResumeOverlay');
     if (btnResumeOverlay) {
-      btnResumeOverlay.addEventListener('click', () => {
-        this.togglePause();
+      btnResumeOverlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.resume();
       });
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'KeyP' && document.getElementById('screen_game_engine')?.classList.contains('active-screen')) {
+      const engineScreen = document.getElementById('screen_game_engine');
+      if (!engineScreen || !engineScreen.classList.contains('active-screen')) return;
+
+      if (e.code === 'KeyP') {
+        e.preventDefault();
         this.togglePause();
+      } else if (e.code === 'Escape' && this.loop.isPaused) {
+        e.preventDefault();
+        this.resume();
       }
     });
+
+    // Ensure pause UI is strictly hidden upon initialization
+    this.updatePauseUI(false);
   }
 
   setupContractEvents() {
@@ -166,14 +178,42 @@ export class Segment4App {
     });
   }
 
+  pause() {
+    if (this.loop.isRunning && !this.loop.isPaused && !this.loop.isGameOver) {
+      this.loop.pause();
+    }
+    if (this.surfaceSim) {
+      this.surfaceSim.resetInputKeys();
+    }
+    this.updatePauseUI(true);
+    this.showActionNotice('Simulation paused.', false);
+  }
+
+  resume() {
+    if (this.loop.isPaused && !this.loop.isGameOver) {
+      this.loop.resume();
+    }
+    this.lastRenderTimestamp = performance.now();
+    this.updatePauseUI(false);
+    this.showActionNotice('Simulation resumed.', true);
+  }
+
   togglePause() {
-    const isPaused = this.loop.togglePause();
+    if (this.loop.isPaused) {
+      this.resume();
+    } else {
+      this.pause();
+    }
+  }
+
+  updatePauseUI(isPaused) {
     const btnPause = document.getElementById('btnPauseSimulation');
     const overlay = document.getElementById('surfacePauseOverlay');
 
     if (btnPause) {
       btnPause.textContent = isPaused ? '▶️ RESUME' : '⏸️ PAUSE';
       btnPause.classList.toggle('paused', isPaused);
+      btnPause.setAttribute('aria-label', isPaused ? 'Resume Simulation' : 'Pause Simulation');
     }
 
     if (overlay) {
@@ -192,12 +232,14 @@ export class Segment4App {
           pauseSecEl.textContent = `${rem}s`;
         }
         overlay.classList.remove('hidden');
+        overlay.style.display = 'flex';
+        overlay.style.pointerEvents = 'auto';
       } else {
         overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+        overlay.style.pointerEvents = 'none';
       }
     }
-
-    this.showActionNotice(isPaused ? 'Simulation paused.' : 'Simulation resumed.', !isPaused);
   }
 
   handleSolComplete(data) {
@@ -244,14 +286,11 @@ export class Segment4App {
     const engineTab = document.querySelector('.nav-tab-btn[data-target-screen="game_engine"]');
     if (engineTab) engineTab.classList.add('active-tab');
 
-    // Reset pause state on new sol launch
-    const btnPause = document.getElementById('btnPauseSimulation');
-    if (btnPause) {
-      btnPause.textContent = '⏸️ PAUSE';
-      btnPause.classList.remove('paused');
+    // Reset pause state and ensure pause overlay is hidden on sol launch
+    if (this.loop.isPaused) {
+      this.loop.resume();
     }
-    const overlay = document.getElementById('surfacePauseOverlay');
-    if (overlay) overlay.classList.add('hidden');
+    this.updatePauseUI(false);
 
     // Initialize 3D Surface Simulator if not already created
     const surfaceContainer = document.getElementById('surfaceSimulatorContainer');

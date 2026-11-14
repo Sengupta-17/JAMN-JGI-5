@@ -44,6 +44,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Universal utility class for hidden elements */
+.hidden {
+  display: none !important;
+}
+
 /* Subtle CRT scanline atmosphere */
 body::before {
   content: " ";
@@ -1905,6 +1910,14 @@ body.fullscreen-3d-active .fullscreen-3d-wrap {
   justify-content: center;
   align-items: center;
   z-index: 25;
+  pointer-events: auto;
+}
+
+.surface-pause-overlay.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 .pause-card {

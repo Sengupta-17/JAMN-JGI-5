@@ -163,6 +163,10 @@ export class MarsSurfaceSimulator {
       }
     });
 
+    window.addEventListener('blur', () => {
+      this.resetInputKeys();
+    });
+
     window.addEventListener('resize', () => {
       if (!this.container || !this.renderer || !this.camera) return;
       const w = this.container.clientWidth;
@@ -173,6 +177,12 @@ export class MarsSurfaceSimulator {
         this.renderer.setSize(w, h);
       }
     });
+  }
+
+  resetInputKeys() {
+    for (const k of Object.keys(this.inputKeys)) {
+      this.inputKeys[k] = false;
+    }
   }
 
   toggleCameraMode() {
