@@ -67,11 +67,11 @@ The 3D Mars Base Habitat Alpha-1 is a geodesic greenhouse biodome established on
 
 ### 2.2 Proximity Interaction System
 Astronaut position $(p_x, p_z)$ is evaluated every frame against 8 localized interaction spheres:
-1. **Command Operations & Comms Console:** $(0, -12.2)$, radius $2.8\text{ m}$.
-2. **ECLSS Atmospheric Processing Hub (OGA & CDRA):** $(-11.0, 0)$, radius $2.8\text{ m}$.
-3. **Agri-Pod Bioregenerative Farm:** $(11.0, 0)$, radius $2.8\text{ m}$.
-4. **Water Recovery & Centrifuge Distillation:** $(-7.5, 7.0)$, radius $2.6\text{ m}$.
-5. **Kilopower Nuclear Microgrid Switchboard:** $(7.5, 7.0)$, radius $2.6\text{ m}$.
+1. **Command Operations & Comms Console:** $(0, -12.5)$, radius $3.6\text{ m}$.
+2. **ECLSS Atmospheric Processing Hub (OGA & CDRA):** $(-11.5, 0)$, radius $3.6\text{ m}$.
+3. **Agri-Pod Bioregenerative Farm:** $(11.5, 0)$, radius $3.6\text{ m}$.
+4. **Water Recovery & Centrifuge Distillation:** $(-9.0, 8.0)$, radius $3.6\text{ m}$.
+5. **Kilopower Nuclear Microgrid Switchboard:** $(9.0, 8.0)$, radius $3.6\text{ m}$.
 6. **EVA Airlock Pressurized Blast Hatch:** $(0, 15.2)$, radius $2.2\text{ m}$.
 7. **EVA Preparation & SuitPort Bay:** $(0, 18.2)$, radius $2.5\text{ m}$.
 8. **Crew Quarters & Medical Bay:** $(0, 4.8)$, radius $2.5\text{ m}$.
@@ -593,40 +593,40 @@ export class GazeboPhysicsEngine {
         id: 'command_module',
         name: 'Command Deck & Comms Console',
         x: 0,
-        z: -12.2,
-        radius: 2.8,
+        z: -12.5,
+        radius: 3.6,
         prompt: 'PRESS [E] TO ACCESS COMMAND OPS & CHALLENGES'
       },
       {
         id: 'eclss_module',
         name: 'ECLSS Atmosphere Hub (OGA & CDRA)',
-        x: -11.0,
+        x: -11.5,
         z: 0,
-        radius: 2.8,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT ECLSS LIFE SUPPORT'
       },
       {
         id: 'hydroponics_module',
         name: 'Agri-Pod Bioregenerative Farm',
-        x: 11.0,
+        x: 11.5,
         z: 0,
-        radius: 2.8,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT AGRI-POD FOOD PRODUCTION'
       },
       {
         id: 'water_recovery_module',
         name: 'Water Recovery & VCD Centrifuge',
-        x: -7.5,
-        z: 7.0,
-        radius: 2.6,
+        x: -9.0,
+        z: 8.0,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT WATER RECOVERY SYSTEM'
       },
       {
         id: 'power_microgrid_module',
         name: 'Kilopower Nuclear Microgrid',
-        x: 7.5,
-        z: 7.0,
-        radius: 2.6,
+        x: 9.0,
+        z: 8.0,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT POWER MICROGRID'
       },
       {

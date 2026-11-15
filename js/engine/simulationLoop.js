@@ -52,11 +52,8 @@ export class SimulationLoop {
         const cost = issue ? (issue.repairCostCH + this.hazards.getEVACostModifier()) : 2;
         if (this.crewHoursRemaining >= cost) {
           this.crewHoursRemaining -= cost;
-          this.hazards.resolveModuleIssue(locationId);
-        } else {
-          // If not enough CH, keep issue active
-          console.warn(`Insufficient Crew-Hours (${this.crewHoursRemaining} < ${cost}) to repair ${locationId}`);
         }
+        this.hazards.resolveModuleIssue(locationId);
       }
     });
 

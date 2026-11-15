@@ -289,6 +289,10 @@ export class HazardManager {
 
   raiseModuleIssue(locationId, issueDetails) {
     this.activeIssues.set(locationId, issueDetails);
+    if (this.engine?.moduleHealth && locationId in this.engine.moduleHealth) {
+      this.engine.moduleHealth[locationId] = 0.50;
+      this.engine.recomputeRates();
+    }
     if (this.bus) {
       this.bus.emit('baseIssueRaised', { locationId, issueDetails });
     }

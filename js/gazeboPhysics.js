@@ -99,40 +99,40 @@ export class GazeboPhysicsEngine {
         id: 'command_module',
         name: 'Command Deck & Comms Console',
         x: 0,
-        z: -12.2,
-        radius: 2.8,
+        z: -12.5,
+        radius: 3.6,
         prompt: 'PRESS [E] TO ACCESS COMMAND OPS & CHALLENGES'
       },
       {
         id: 'eclss_module',
         name: 'ECLSS Atmosphere Hub (OGA & CDRA)',
-        x: -11.0,
+        x: -11.5,
         z: 0,
-        radius: 2.8,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT ECLSS LIFE SUPPORT'
       },
       {
         id: 'hydroponics_module',
         name: 'Agri-Pod Bioregenerative Farm',
-        x: 11.0,
+        x: 11.5,
         z: 0,
-        radius: 2.8,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT AGRI-POD FOOD PRODUCTION'
       },
       {
         id: 'water_recovery_module',
         name: 'Water Recovery & VCD Centrifuge',
-        x: -7.5,
-        z: 7.0,
-        radius: 2.6,
+        x: -9.0,
+        z: 8.0,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT WATER RECOVERY SYSTEM'
       },
       {
         id: 'power_microgrid_module',
         name: 'Kilopower Nuclear Microgrid',
-        x: 7.5,
-        z: 7.0,
-        radius: 2.6,
+        x: 9.0,
+        z: 8.0,
+        radius: 3.6,
         prompt: 'PRESS [E] TO INSPECT POWER MICROGRID'
       },
       {

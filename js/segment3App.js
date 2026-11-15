@@ -71,6 +71,24 @@ export class Segment3App {
       this.threeRenderer.onInteract((modId) => {
         sound.playBeep(1200, 0.08);
         this.openSidePopup(modId);
+        if (this.activeIssues.has(modId) && !this.repairInProgress) {
+          this.executeRepair(modId);
+        }
+      });
+
+      this.threeRenderer.onEmergencyProximity((modId, dist) => {
+        if (this.activeIssues.has(modId)) {
+          // Open side popup if closed or showing another module
+          if (this.currentScreen === 'base_nav' && !this.repairInProgress) {
+            if (this.selectedModuleId !== modId || document.getElementById('sidePopupPanel')?.classList.contains('hidden')) {
+              this.openSidePopup(modId);
+            }
+          }
+          // If in close touch range (dist <= 2.2m), automatically start repair!
+          if (dist <= 2.2 && !this.repairInProgress) {
+            this.executeRepair(modId);
+          }
+        }
       });
 
       this.threeRenderer.onMenuToggle(() => {
@@ -126,13 +144,30 @@ export class Segment3App {
     });
 
     // Inputs: dayStarted and dayCompleted from Segment 4
-    contractBus.on('dayStarted', () => {
+    contractBus.on('dayStarted', (payload) => {
+      if (payload?.parameters) {
+        this.syncParameters(payload.parameters);
+      }
       this.renderSolTrackerGraphic();
     });
 
-    contractBus.on('dayCompleted', () => {
+    contractBus.on('dayCompleted', (payload) => {
+      if (payload?.parameters) {
+        this.syncParameters(payload.parameters);
+      }
       this.renderSolTrackerGraphic();
     });
+  }
+
+  syncParameters(params) {
+    if (!params) return;
+    this.baseParams = {
+      oxygen: Number(Number(params.oxygen ?? this.baseParams.oxygen).toFixed(1)),
+      food: Number(Number(params.food ?? this.baseParams.food).toFixed(1)),
+      water: Number(Number(params.water ?? this.baseParams.water).toFixed(1)),
+      power: Number(Number(params.power ?? this.baseParams.power).toFixed(1))
+    };
+    this.renderBaseParametersHUD();
   }
 
   setSite(siteId) {
@@ -146,6 +181,11 @@ export class Segment3App {
   setScreen(screen) {
     this.currentScreen = screen;
     sound.playClick();
+
+    // Sync latest mission parameters from Segment 4 if available
+    if (window.jamnSegment4App?.engine?.parameters) {
+      this.syncParameters(window.jamnSegment4App.engine.parameters);
+    }
 
     // Fullscreen 3D Mode handling:
     // When base_nav is selected, the 3D viewport takes over the whole screen
@@ -265,7 +305,19 @@ export class Segment3App {
     const mod = BASE_MODULES.find(m => m.id === moduleId);
     if (!mod) return null;
 
-    if (customDetails) return customDetails;
+    if (customDetails) {
+      return {
+        id: customDetails.id || `${moduleId}_hazard_fault`,
+        title: customDetails.title || customDetails.faultName || `${mod.name} Telemetry Variance`,
+        faultName: customDetails.faultName || customDetails.title || `${mod.name} Telemetry Variance`,
+        severity: customDetails.severity || 'critical',
+        description: customDetails.description || 'System operating variance exceeding tolerance threshold. Manual maintenance required.',
+        repairAction: customDetails.repairAction || 'Execute Automated Diagnostics & Flush Loop',
+        targetParameter: customDetails.targetParameter || mod.primaryParameter,
+        repairCostCH: customDetails.repairCostCH || 2,
+        penaltyRate: customDetails.penaltyRate || 1.5
+      };
+    }
 
     const failures = mod.possibleFailures;
     if (failures && failures.length > 0) {
@@ -274,6 +326,7 @@ export class Segment3App {
     return {
       id: `${moduleId}_generic_fault`,
       title: `${mod.name} Telemetry Variance`,
+      faultName: `${mod.name} Telemetry Variance`,
       severity: 'critical',
       description: 'Sensor loop telemetry variance exceeding safety tolerance by 35%. Manual recalibration required.',
       repairAction: 'Execute Diagnostics & Reset System Controller',
@@ -308,12 +361,25 @@ export class Segment3App {
     const repairStatus = document.getElementById('repairStatus');
     if (repairBtn) repairBtn.disabled = true;
 
+    const mod = BASE_MODULES.find(m => m.id === moduleId);
+    const actionLabel = (issue.repairAction || 'System Diagnostics & Recalibration').toUpperCase();
+
     let p = 0;
     const interval = setInterval(() => {
       p += 25;
+      const statusText = `REPAIR SEQUENCE IN PROGRESS: ${p}% // EXECUTING ${actionLabel}`;
       if (repairStatus) {
-        repairStatus.textContent = `REPAIR SEQUENCE IN PROGRESS: ${p}% // EXECUTING ${issue.repairAction.toUpperCase()}`;
+        repairStatus.textContent = statusText;
       }
+
+      // Also update FPV prompt if exploring in 3D view
+      const promptEl = document.getElementById('fpvInteractionPrompt');
+      if (promptEl) {
+        promptEl.classList.remove('hidden');
+        promptEl.classList.add('alarm-mode');
+        promptEl.innerHTML = `🔧 <strong>REPAIR IN PROGRESS: ${p}%</strong> // ${actionLabel}`;
+      }
+
       sound.playBeep(600 + p * 8, 0.04);
 
       if (p >= 100) {
@@ -332,18 +398,49 @@ export class Segment3App {
         contractBus.emit('baseIssueFixed', { locationId: moduleId, fixedAt: Date.now() });
         this.logEvent('EVENT_SENT', `baseIssueFixed: ${moduleId}`);
 
+        // Direct synchronization with Segment 4 engine if active
+        if (window.jamnSegment4App?.hazards) {
+          window.jamnSegment4App.hazards.resolveModuleIssue(moduleId);
+        }
+        if (window.jamnSegment4App?.engine) {
+          window.jamnSegment4App.engine.repairModule(moduleId);
+        }
+
         this.repairInProgress = false;
         
         // Refresh open side popup
-        const mod = BASE_MODULES.find(m => m.id === moduleId);
         const popupContent = document.getElementById('sidePopupContent');
         if (mod && popupContent) {
           this.renderModuleDetailsToContainer(mod, popupContent);
         }
 
+        if (promptEl) {
+          promptEl.innerHTML = `✅ <strong>REPAIR COMPLETE:</strong> ${(mod ? mod.name : moduleId).toUpperCase()} RESTORED TO 100% NOMINAL!`;
+          setTimeout(() => {
+            promptEl.classList.remove('alarm-mode');
+            promptEl.classList.add('hidden');
+          }, 2500);
+        }
+
+        this.showActionNotice(`Emergency resolved: ${mod ? mod.name : moduleId} repaired and fully nominal!`, true);
         this.render();
       }
-    }, 400);
+    }, 350);
+  }
+
+  showActionNotice(msg, isSuccess = true) {
+    const banner = document.getElementById('actionNoticeToast');
+    if (!banner) return;
+    banner.textContent = msg;
+    banner.className = `action-notice-toast ${isSuccess ? 'success' : 'error'}`;
+    banner.classList.remove('hidden');
+    banner.style.display = 'block';
+
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      banner.classList.add('hidden');
+      banner.style.display = 'none';
+    }, 4000);
   }
 
   // Mission launch and challenge dispatch
@@ -639,16 +736,20 @@ export class Segment3App {
     const container = document.getElementById('baseParametersHUD');
     if (container) {
       container.innerHTML = params.map(p => {
-        const val = this.baseParams[p.key];
+        const rawVal = this.baseParams[p.key];
+        const numVal = typeof rawVal === 'number' ? rawVal : (parseFloat(rawVal) || 0);
+        const val = numVal.toFixed(1);
         let statusColor = p.color;
         let statusText = 'NOMINAL';
-        if (val < 40) {
+        if (numVal < 40) {
           statusColor = '#ef4444';
           statusText = 'CRITICAL';
-        } else if (val < 65) {
+        } else if (numVal < 65) {
           statusColor = '#f59e0b';
           statusText = 'DEFICIT';
         }
+
+        const fillPct = Math.max(0, Math.min(100, numVal));
 
         return `
           <div class="param-card" style="border-top: 3px solid ${p.color};">
@@ -662,7 +763,7 @@ export class Segment3App {
               <span class="param-desc">${p.desc}</span>
             </div>
             <div class="param-bar-bg">
-              <div class="param-bar-fill" style="width: ${val}%; background-color: ${p.color};"></div>
+              <div class="param-bar-fill" style="width: ${fillPct}%; background-color: ${p.color};"></div>
             </div>
           </div>
         `;
@@ -671,19 +772,22 @@ export class Segment3App {
 
     // Mini Parameter HUD overlay on top-left of the 3D viewport
     const miniOxy = document.querySelector('#miniHudOxygen .mini-val');
-    if (miniOxy) miniOxy.textContent = `${this.baseParams.oxygen}%`;
+    if (miniOxy) miniOxy.textContent = `${Number(this.baseParams.oxygen).toFixed(1)}%`;
     const miniFood = document.querySelector('#miniHudFood .mini-val');
-    if (miniFood) miniFood.textContent = `${this.baseParams.food}%`;
+    if (miniFood) miniFood.textContent = `${Number(this.baseParams.food).toFixed(1)}%`;
     const miniWater = document.querySelector('#miniHudWater .mini-val');
-    if (miniWater) miniWater.textContent = `${this.baseParams.water}%`;
+    if (miniWater) miniWater.textContent = `${Number(this.baseParams.water).toFixed(1)}%`;
     const miniPower = document.querySelector('#miniHudPower .mini-val');
-    if (miniPower) miniPower.textContent = `${this.baseParams.power}%`;
+    if (miniPower) miniPower.textContent = `${Number(this.baseParams.power).toFixed(1)}%`;
 
     // Detailed breakdown on the Base Info screen
     const infoContainer = document.getElementById('baseInfoDetailedHUD');
     if (infoContainer) {
       infoContainer.innerHTML = params.map(p => {
-        const val = this.baseParams[p.key];
+        const rawVal = this.baseParams[p.key];
+        const numVal = typeof rawVal === 'number' ? rawVal : (parseFloat(rawVal) || 0);
+        const val = numVal.toFixed(1);
+        const fillPct = Math.max(0, Math.min(100, numVal));
         return `
           <div class="info-param-detail-card">
             <div class="info-param-top">
@@ -691,10 +795,10 @@ export class Segment3App {
               <span class="info-param-pct" style="color: ${p.color};">${val}%</span>
             </div>
             <div class="param-bar-bg">
-              <div class="param-bar-fill" style="width: ${val}%; background-color: ${p.color};"></div>
+              <div class="param-bar-fill" style="width: ${fillPct}%; background-color: ${p.color};"></div>
             </div>
             <div class="info-param-meta">
-              <span>Site Calibrated Baseline: <strong>${val}%</strong></span>
+              <span>Current Mission Telemetry: <strong>${val}%</strong></span>
               <span>Primary Subsystem: <strong>${p.desc}</strong></span>
             </div>
           </div>

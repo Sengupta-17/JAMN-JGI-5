@@ -269,6 +269,7 @@ export class Segment4App {
       btnReturn.onclick = () => {
         modal.classList.add('hidden');
         if (window.jamnSegment3App) {
+          window.jamnSegment3App.syncParameters(data.parameters);
           window.jamnSegment3App.setScreen('base_info');
         }
       };

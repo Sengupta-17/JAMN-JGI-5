@@ -42,6 +42,7 @@ export class ThreeBaseRenderer {
     this.onInteractCallback = null;
     this.onMenuToggleCallback = null;
     this.onEscapeCallback = null;
+    this.onEmergencyProximityCallback = null;
 
     if (THREE) {
       this.init();
@@ -748,6 +749,10 @@ export class ThreeBaseRenderer {
     this.onEscapeCallback = callback;
   }
 
+  onEmergencyProximity(callback) {
+    this.onEmergencyProximityCallback = callback;
+  }
+
   bindControls() {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
@@ -789,10 +794,19 @@ export class ThreeBaseRenderer {
       }
     });
 
-    // Mouse Look (Pointer Lock)
+    // Mouse Look (Pointer Lock) & Click Interaction
     this.container.addEventListener('click', () => {
       if (!this.isPointerLocked) {
         this.container.requestPointerLock();
+      } else {
+        const nearby = this.physics.getNearbyInteraction();
+        if (nearby) {
+          if (nearby.id === 'airlock_door') {
+            this.toggleDoor();
+          } else if (this.onInteractCallback) {
+            this.onInteractCallback(nearby.id);
+          }
+        }
       }
     });
 
@@ -880,15 +894,25 @@ export class ThreeBaseRenderer {
       }
     }
 
-    // 7. Check Proximity Interaction Prompt
+    // 7. Check Proximity Interaction Prompt & Emergency Alarms
     const nearby = this.physics.getNearbyInteraction();
     const promptEl = document.getElementById('fpvInteractionPrompt');
     if (promptEl) {
       if (nearby) {
         promptEl.classList.remove('hidden');
-        promptEl.textContent = nearby.prompt;
+        if (this.activeIssues.has(nearby.id)) {
+          promptEl.classList.add('alarm-mode');
+          promptEl.innerHTML = `🚨 <strong>BASE EMERGENCY:</strong> PRESS <strong>[E]</strong> TO REPAIR ${nearby.name.toUpperCase()} (OR WALK IN CLOSE)`;
+          if (this.onEmergencyProximityCallback) {
+            this.onEmergencyProximityCallback(nearby.id, nearby.distance);
+          }
+        } else {
+          promptEl.classList.remove('alarm-mode');
+          promptEl.textContent = nearby.prompt;
+        }
       } else {
         promptEl.classList.add('hidden');
+        promptEl.classList.remove('alarm-mode');
       }
     }
 
