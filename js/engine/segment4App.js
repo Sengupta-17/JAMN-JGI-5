@@ -152,6 +152,27 @@ export class Segment4App {
     });
   }
 
+  resetMission() {
+    if (this.loop) {
+      this.loop.reset();
+    }
+    if (this.engine) {
+      this.engine.reset(this.siteId);
+    }
+    if (this.surfaceSim) {
+      this.surfaceSim.resetInputKeys();
+    }
+    this.missionStarted = false;
+    this.updatePauseUI(false);
+    ['surfacePauseOverlay', 'solCompletedModal', 'morningBriefingModal', 'handoverModal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      }
+    });
+  }
+
   setupLoopCallbacks() {
     this.loop.onTickCallbacks.push((data) => {
       this.updateHUD(data);

@@ -739,11 +739,13 @@ window.JAMN_MAIN = (function () {
   function beginSurvivalMission() {
     state.survivalMissionStarted = true;
     window.JAMN_SCENE.playTone(620, "triangle", 0.22, 0.07);
-    state.habLog.unshift(
-      `[SOL ${state.solCount}] Survival Mission Protocol Activated. Closed-loop life support under crew command.`
-    );
-    updateHabitatUI();
-    showToast("MARS SURVIVAL MISSION PROTOCOL ACTIVE // MANAGE HABITAT SYSTEMS");
+    const chosenSite = state.confirmedSiteId || "valles_marineris";
+    const mappedSiteId = (chosenSite === "polar_ice_caps") ? "north_polar" : chosenSite;
+    if (typeof window.transitionToSegment3 === "function") {
+      window.transitionToSegment3(mappedSiteId, "base_entry", false);
+    } else {
+      showToast("MARS SURVIVAL MISSION PROTOCOL ACTIVE // INGRESS READY");
+    }
   }
 
   function performHabitatAction(actionType) {
@@ -779,17 +781,6 @@ window.JAMN_MAIN = (function () {
           `[SOL ${state.solCount}] Hydroponic aeroponics bay harvested (+15% Caloric Reserve).`
         );
       }
-    } else if (actionType === "ADVANCE_SOL") {
-      state.solCount += 1;
-      state.dustFactor = Math.min(65, state.dustFactor + 6);
-      const solarReplenish = Math.round(10 * (site ? site.solarPowerFactor : 1.0));
-      state.habPower = Math.max(5, Math.min(100, state.habPower + solarReplenish - 11));
-      state.habOxygen = Math.max(5, state.habOxygen - 5);
-      state.habWater = Math.max(5, state.habWater - 4);
-      state.habFood = Math.max(5, state.habFood - 4);
-      state.habLog.unshift(
-        `[SOL ${state.solCount}] Martian Sol completed (24h 37m). Daily life-support telemetry updated.`
-      );
     }
 
     updateHabitatUI();
@@ -828,14 +819,6 @@ window.JAMN_MAIN = (function () {
       statusBadge.className = state.survivalMissionStarted
         ? "px-2.5 py-1 rounded text-xs font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-500/60"
         : "px-2.5 py-1 rounded text-xs font-mono bg-amber-950/80 text-amber-300 border border-amber-500/60";
-    }
-
-    const logEl = document.getElementById("hab-log-box");
-    if (logEl) {
-      logEl.innerHTML = state.habLog
-        .slice(0, 7)
-        .map((item) => `<div class="py-1 border-b border-slate-800/80">${item}</div>`)
-        .join("");
     }
   }
 

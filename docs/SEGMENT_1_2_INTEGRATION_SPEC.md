@@ -47,9 +47,25 @@ window.JAMN_MAIN.enterHabitatAirlock();
 6. Calls `window.jamnSegment3App.setSite(mappedSiteId)` to update environmental readouts and starting reserves.
 7. Calls `window.jamnSegment3App.triggerAirlockIngress()`, launching the atmospheric purge and pressurization sequence.
 
-### 3.2 Bidirectional Stage Navigation
-- Players can return to flight and landing stages at any time by selecting **0. FLIGHT & LANDING** (`#tabBtnPrologue`) on the navigation bar.
-- Inside Segment 1 and 2, `#top-mission-bar` provides quick-jump controls to jump directly to **Base Habitat (Seg 3)** or **Rover Sim (Seg 4)**.
+### 3.2 Mission Restart & Reset Confirmation Protocol
+- Selecting **0. FLIGHT & LANDING** (`#tabBtnPrologue`) from Segments 3 and 4 triggers a high-visibility tactical warning modal (`#restartConfirmationModal`) inquiring: *"Do you want to Restart?"*
+  - **Cancel (No):** Dismisses the dialog, maintaining active simulation state without interruption.
+  - **Confirm (Yes):**
+    - Terminates and resets active Segment 4 rover simulation (`window.jamnSegment4App.resetMission()`), stopping the animation ticker, resetting Sol back to 1, and clearing pause/handover overlays.
+    - Resets Segment 3 base Sol UI, radial Sol progress gauge, matrix cells, and clears active base hazards.
+    - Invokes `window.JAMN_MAIN.restartMission()` to clear mission telemetry and resets back to Stage 0 (Title Briefing).
+- In Segments 1 and 2, the dedicated restart buttons in the top navigation bar and Stage 6 operate without interruption or unnecessary confirmation prompts.
+- The legacy "Browser reload restarts from Day 1" label and rules have been eliminated, establishing the "Flight & Landing" navigation workflow as the single authoritative reset mechanism.
+
+### 3.3 Direct Survival Mission Ingress Mapping
+- In Stage 6 (Habitat View), clicking **Begin Survival Mission** directly invokes:
+  ```javascript
+  window.transitionToSegment3(mappedSiteId, "base_entry", false);
+  ```
+  This immediately navigates the astronaut to the **1. BASE ENTRY** screen (`#screen_base_entry`), presenting the exterior habitat visualizer and the **INITIATE AIRLOCK INGRESS** action without forcing an automatic airlock cycle.
+
+### 3.4 Habitat Lifecycle Corrections
+- Removed the manual "Advance to Next Martian Sol (24h 37m)" control and the local "Habitat Telemetry Log" from Stage 6. Daily Martian Sol progression is exclusively governed by the calibrated 60-second diurnal cycle in Segment 4, with telemetry synchronized to Base Alpha-1 upon Sol completion.
 
 ---
 

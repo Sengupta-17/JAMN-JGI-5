@@ -182,12 +182,83 @@ export class Segment3App {
     this.render();
   }
 
+  showRestartConfirmation() {
+    const modal = document.getElementById('restartConfirmationModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+    }
+  }
+
+  hideRestartConfirmation() {
+    const modal = document.getElementById('restartConfirmationModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  }
+
+  restartFullMissionFromBase() {
+    this.hideRestartConfirmation();
+    sound.playClick();
+
+    // 1. Reset and stop Segment 4 simulation if active
+    if (window.jamnSegment4App) {
+      if (typeof window.jamnSegment4App.resetMission === 'function') {
+        window.jamnSegment4App.resetMission();
+      } else {
+        window.jamnSegment4App.loop?.reset();
+        window.jamnSegment4App.engine?.reset(this.currentSiteId);
+        window.jamnSegment4App.updatePauseUI?.(false);
+      }
+    }
+
+    // 2. Reset Segment 3 base Sol UI and parameters
+    this.activeIssues.clear();
+    if (this.interiorVis) this.interiorVis.setActiveIssues([]);
+    if (this.threeRenderer) this.threeRenderer.setActiveIssues([]);
+    sound.stopAlarm();
+
+    const solDisplay = document.getElementById('headerSolDisplay');
+    if (solDisplay) solDisplay.textContent = 'SOL 01 / 30';
+
+    const solHero = document.getElementById('baseInfoSolHero');
+    if (solHero) solHero.textContent = 'SOL 01 / 30';
+
+    const radialDial = document.getElementById('radialSolNumber');
+    if (radialDial) radialDial.textContent = '01';
+
+    const solsCompletedEl = document.getElementById('baseInfoSolsCompleted');
+    if (solsCompletedEl) solsCompletedEl.textContent = '0';
+
+    const solsRemainingEl = document.getElementById('baseInfoSolsRemaining');
+    if (solsRemainingEl) solsRemainingEl.textContent = '30';
+
+    const ringFill = document.getElementById('solRingProgressFill');
+    if (ringFill) ringFill.style.strokeDashoffset = '255';
+
+    for (let s = 1; s <= 30; s++) {
+      const cell = document.getElementById(`solMatrixCell_${s}`);
+      if (cell) {
+        cell.className = 'matrix-sol-cell' + (s === 1 ? ' active current' : ' upcoming');
+      }
+    }
+
+    // 3. Reset Segment 1 and 2
+    if (window.JAMN_MAIN && typeof window.JAMN_MAIN.restartMission === 'function') {
+      window.JAMN_MAIN.restartMission();
+    }
+
+    // 4. Transition to Prologue TITLE
+    if (typeof window.transitionToPrologue === 'function') {
+      window.transitionToPrologue('TITLE');
+    }
+  }
+
   setScreen(screen) {
     if (screen === 'prologue') {
       sound.playClick();
-      if (typeof window.transitionToPrologue === 'function') {
-        window.transitionToPrologue('TITLE');
-      }
+      this.showRestartConfirmation();
       return;
     }
 
@@ -574,6 +645,32 @@ export class Segment3App {
     if (btnOpenBriefing) {
       btnOpenBriefing.addEventListener('click', () => {
         document.getElementById('morningBriefingModal')?.classList.remove('hidden');
+      });
+    }
+
+    // Restart Confirmation Modal buttons
+    const btnRestartYes = document.getElementById('btnConfirmRestartYes');
+    if (btnRestartYes) {
+      btnRestartYes.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.restartFullMissionFromBase();
+      });
+    }
+
+    const btnRestartNo = document.getElementById('btnConfirmRestartNo');
+    if (btnRestartNo) {
+      btnRestartNo.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.hideRestartConfirmation();
+      });
+    }
+
+    const restartModal = document.getElementById('restartConfirmationModal');
+    if (restartModal) {
+      restartModal.addEventListener('click', (e) => {
+        if (e.target === restartModal) {
+          this.hideRestartConfirmation();
+        }
       });
     }
 
@@ -986,7 +1083,7 @@ export class Segment3App {
 }
 
 // Global Transitions between Segments 1 & 2 (Prologue) and Segments 3 & 4
-window.transitionToSegment3 = function(siteId) {
+window.transitionToSegment3 = function(siteId, targetScreen = 'base_entry', autoIngress = true) {
   const chosenSite = siteId || window.JAMN_MAIN?.getConfirmedSiteId?.() || 'valles_marineris';
   const mappedSiteId = (chosenSite === 'polar_ice_caps') ? 'north_polar' : chosenSite;
 
@@ -1013,13 +1110,15 @@ window.transitionToSegment3 = function(siteId) {
   if (devDock) devDock.classList.remove('hidden');
 
   document.querySelectorAll('.segment-nav-tabs .nav-tab-btn').forEach(btn => {
-    btn.classList.toggle('active-tab', btn.getAttribute('data-target-screen') === 'base_entry');
+    btn.classList.toggle('active-tab', btn.getAttribute('data-target-screen') === targetScreen);
   });
 
   if (window.jamnSegment3App) {
     window.jamnSegment3App.setSite(mappedSiteId);
-    window.jamnSegment3App.setScreen('base_entry');
-    window.jamnSegment3App.triggerAirlockIngress();
+    window.jamnSegment3App.setScreen(targetScreen);
+    if (autoIngress) {
+      window.jamnSegment3App.triggerAirlockIngress();
+    }
   }
 };
 

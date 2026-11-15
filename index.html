@@ -644,14 +644,6 @@
               <span>🌱 Harvest Hydroponic Crops</span>
               <span class="text-emerald-400 font-mono text-xs">+15% Food / -6% H₂O</span>
             </button>
-            <button type="button" class="btn-mars text-center py-2.5 mt-1" onclick="window.JAMN_MAIN.performHabitatAction('ADVANCE_SOL')">
-              Advance to Next Martian Sol (24h 37m) →
-            </button>
-          </div>
-
-          <div class="mt-4">
-            <div class="text-[11px] font-mono text-slate-400">HABITAT TELEMETRY LOG:</div>
-            <div id="hab-log-box" class="mt-1 max-h-36 overflow-y-auto custom-scroll text-xs font-mono text-slate-300 bg-slate-950/85 p-2.5 rounded border border-slate-800"></div>
           </div>
         </div>
 
@@ -854,8 +846,6 @@
                 <div><span class="stat-lbl">SOLS REMAINING:</span> <strong id="baseInfoSolsRemaining">30</strong> sols
                 </div>
                 <div><span class="stat-lbl">CYCLE DURATION:</span> <strong>60s / sol</strong></div>
-                <div><span class="stat-lbl">RESET RULE:</span> <span
-                    style="color: var(--text-muted); font-size: 10px;">Browser reload restarts from Day 1</span></div>
               </div>
             </div>
 
@@ -1351,6 +1341,26 @@
       <div style="margin-top: 20px; display: flex; justify-content: center; gap: 14px;">
         <button id="btnRetryMission" class="btn-primary-action" style="padding: 12px 30px;">
           🔄 RETRY MISSION (NEW 30-SOL SCRIPT)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESTART CONFIRMATION MODAL (§ RESTART FLIGHT & LANDING) -->
+  <div id="restartConfirmationModal" class="airlock-modal-overlay hidden" style="z-index: 9999;">
+    <div class="airlock-dialog" style="border-color: #f59e0b; box-shadow: 0 0 35px rgba(245, 158, 11, 0.35); max-width: 480px;">
+      <div style="font-size: 36px; margin-bottom: 8px;">⚠️</div>
+      <div style="font-size: 11px; letter-spacing: 0.12em; color: #f59e0b; font-weight: 700; margin-bottom: 6px;">MISSION RESTART WARNING</div>
+      <h2 style="font-size: 18px; color: #fff; margin-bottom: 12px; font-weight: 700;">Do you want to Restart?</h2>
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; font-family: var(--font-sans);">
+        Returning to Flight &amp; Landing will reset all mission telemetry, stop active surface rover simulations, and restart the expedition from Day 1 in Segment 1.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 14px;">
+        <button id="btnConfirmRestartYes" class="btn-primary-action" style="background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); border-color: #f87171; padding: 10px 22px; font-size: 13px;">
+          ✓ YES, RESTART
+        </button>
+        <button id="btnConfirmRestartNo" class="btn-tactical" style="padding: 10px 22px; font-size: 13px;">
+          ✕ NO, CANCEL
         </button>
       </div>
     </div>

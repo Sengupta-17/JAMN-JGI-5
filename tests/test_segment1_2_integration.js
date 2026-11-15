@@ -90,11 +90,25 @@ console.log('--- TESTING SEGMENT 1 & 2 REPLICATION & INTEGRATION --- \n');
   assert(html.includes('src="js/prologue/data.js"'), 'index.html loads js/prologue/data.js');
   assert(html.includes('src="js/prologue/scene.js"'), 'index.html loads js/prologue/scene.js');
   assert(html.includes('src="js/prologue/main.js"'), 'index.html loads js/prologue/main.js');
+
+  // Fix 1 & 3: Verification of Restart Confirmation Modal in index.html
+  assert(html.includes('id="restartConfirmationModal"'), 'index.html contains restartConfirmationModal');
+  assert(html.includes('id="btnConfirmRestartYes"'), 'index.html contains btnConfirmRestartYes');
+  assert(html.includes('id="btnConfirmRestartNo"'), 'index.html contains btnConfirmRestartNo');
+  assert(html.includes('Do you want to Restart?'), 'index.html contains "Do you want to Restart?" prompt');
+
+  // Fix 1: Verification that "Browser reload restarts from Day 1" is removed
+  assert(!html.includes('Browser reload restarts from Day 1'), 'Reset rule "Browser reload restarts from Day 1" removed from index.html');
+
+  // Fix 5: Verification that "Advance to Next Martian Sol" and telemetry log are completely removed
+  assert(!html.includes('Advance to Next Martian Sol'), 'Button "Advance to Next Martian Sol" removed from index.html');
+  assert(!html.includes('id="hab-log-box"'), 'Habitat telemetry log box removed from index.html');
 }
 
 // 3. Test Transition and Handoff Contract
 {
   let transitionTargetSite = null;
+  let transitionTargetScreen = null;
   let airlockTriggered = false;
   let scenePaused = false;
   let siteSelectedEmitted = null;
@@ -112,7 +126,7 @@ console.log('--- TESTING SEGMENT 1 & 2 REPLICATION & INTEGRATION --- \n');
 
   globalThis.window.jamnSegment3App = {
     setSite: (siteId) => { transitionTargetSite = siteId; },
-    setScreen: (scr) => {},
+    setScreen: (scr) => { transitionTargetScreen = scr; },
     triggerAirlockIngress: () => { airlockTriggered = true; }
   };
 
@@ -127,24 +141,108 @@ console.log('--- TESTING SEGMENT 1 & 2 REPLICATION & INTEGRATION --- \n');
     querySelectorAll: (sel) => []
   };
 
-  // Mock transitionToSegment3
-  const transitionToSegment3 = function(siteId) {
+  // Mock transitionToSegment3 matching segment3App.js implementation
+  const transitionToSegment3 = function(siteId, targetScreen = 'base_entry', autoIngress = true) {
     const chosenSite = siteId || 'valles_marineris';
     const mappedSiteId = (chosenSite === 'polar_ice_caps') ? 'north_polar' : chosenSite;
     if (globalThis.window.JAMN_SCENE?.pause) globalThis.window.JAMN_SCENE.pause();
     if (globalThis.window.contractBus) globalThis.window.contractBus.emit('siteSelected', mappedSiteId);
     if (globalThis.window.jamnSegment3App) {
       globalThis.window.jamnSegment3App.setSite(mappedSiteId);
-      globalThis.window.jamnSegment3App.triggerAirlockIngress();
+      globalThis.window.jamnSegment3App.setScreen(targetScreen);
+      if (autoIngress) {
+        globalThis.window.jamnSegment3App.triggerAirlockIngress();
+      }
     }
   };
 
   // Test handoff with polar_ice_caps
-  transitionToSegment3('polar_ice_caps');
+  transitionToSegment3('polar_ice_caps', 'base_entry', true);
   assert(scenePaused === true, 'Scene pause called on transition');
   assert(siteSelectedEmitted === 'north_polar', 'polar_ice_caps mapped to north_polar for contractBus');
   assert(transitionTargetSite === 'north_polar', 'Segment 3 setSite received mapped north_polar');
-  assert(airlockTriggered === true, 'Segment 3 triggerAirlockIngress called successfully');
+  assert(transitionTargetScreen === 'base_entry', 'Segment 3 setScreen received base_entry');
+  assert(airlockTriggered === true, 'Segment 3 triggerAirlockIngress called successfully with autoIngress=true');
+
+  // Fix 6: Test direct mapping from Begin Survival Mission to (1. Base Entry) without autoIngress
+  airlockTriggered = false;
+  transitionToSegment3('valles_marineris', 'base_entry', false);
+  assert(transitionTargetScreen === 'base_entry', 'Begin Survival Mission directly maps to base_entry');
+  assert(airlockTriggered === false, 'autoIngress=false avoids forcing airlock pressurization on base_entry view');
+}
+
+// 4. Test Prologue main.js file checks
+{
+  const mainJs = fs.readFileSync(path.resolve(process.cwd(), 'js/prologue/main.js'), 'utf-8');
+  assert(!mainJs.includes('actionType === "ADVANCE_SOL"'), 'ADVANCE_SOL removed from prologue/main.js');
+  assert(!mainJs.includes('document.getElementById("hab-log-box")'), 'hab-log-box reference removed from prologue/main.js');
+  assert(mainJs.includes('window.transitionToSegment3(mappedSiteId, "base_entry", false)'), 'beginSurvivalMission directly maps to Segment 3 base_entry');
+  assert(mainJs.includes('restartMission() {'), 'restartMission in prologue/main.js remains intact');
+}
+
+// 5. Test Simulation Reset when Restarting from Segment 3 & 4
+{
+  let loopResetCalled = false;
+  let engineResetCalled = false;
+  let prologueTransitionTarget = null;
+  let solMatrixUpdated = false;
+
+  const mockSegment4App = {
+    loop: {
+      currentSol: 8,
+      isRunning: true,
+      isPaused: true,
+      reset: () => {
+        loopResetCalled = true;
+        mockSegment4App.loop.isRunning = false;
+        mockSegment4App.loop.isPaused = false;
+        mockSegment4App.loop.currentSol = 1;
+      }
+    },
+    engine: {
+      reset: () => { engineResetCalled = true; }
+    },
+    updatePauseUI: (paused) => {},
+    resetMission: function() {
+      this.loop.reset();
+      this.engine.reset();
+    }
+  };
+
+  const mockSegment3App = {
+    currentSiteId: 'valles_marineris',
+    activeIssues: new Map([['water_recovery', { name: 'Fault' }]]),
+    hideRestartConfirmation: () => {},
+    restartFullMissionFromBase: function() {
+      this.hideRestartConfirmation();
+      mockSegment4App.resetMission();
+      this.activeIssues.clear();
+      mockHeaderSolDisplay.textContent = 'SOL 01 / 30';
+      mockBaseInfoSolHero.textContent = 'SOL 01 / 30';
+      solMatrixUpdated = true;
+      if (globalThis.window.transitionToPrologue) {
+        globalThis.window.transitionToPrologue('TITLE');
+      }
+    }
+  };
+
+  const mockHeaderSolDisplay = { textContent: 'SOL 08 / 30' };
+  const mockBaseInfoSolHero = { textContent: 'SOL 08 / 30' };
+  globalThis.window.transitionToPrologue = (stage) => {
+    prologueTransitionTarget = stage;
+  };
+
+  mockSegment3App.restartFullMissionFromBase();
+
+  assert(loopResetCalled === true, 'Segment 4 loop.reset() called on mission restart');
+  assert(mockSegment4App.loop.isRunning === false, 'Segment 4 simulation stopped on mission restart');
+  assert(mockSegment4App.loop.currentSol === 1, 'Segment 4 Sol reset to 1 on mission restart');
+  assert(engineResetCalled === true, 'Segment 4 engine.reset() called on mission restart');
+  assert(mockSegment3App.activeIssues.size === 0, 'Segment 3 active hazards cleared on mission restart');
+  assert(mockHeaderSolDisplay.textContent === 'SOL 01 / 30', 'Header Sol display reset to SOL 01 / 30');
+  assert(mockBaseInfoSolHero.textContent === 'SOL 01 / 30', 'Base Info Sol Hero reset to SOL 01 / 30');
+  assert(solMatrixUpdated === true, 'Sol matrix progress reset');
+  assert(prologueTransitionTarget === 'TITLE', 'Mission restart transitions to Prologue TITLE');
 }
 
 console.log(`\nTEST SUMMARY: ${passed} Passed, ${failed} Failed.`);
