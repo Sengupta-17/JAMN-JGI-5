@@ -171,14 +171,26 @@ export class Segment3App {
   }
 
   setSite(siteId) {
-    if (!LANDING_SITES[siteId]) return;
-    this.currentSiteId = siteId;
-    this.baseParams = { ...LANDING_SITES[siteId].startingParameters };
+    const normalizedId = (siteId === 'polar_ice_caps') ? 'north_polar' : siteId;
+    if (!LANDING_SITES[normalizedId]) return;
+    this.currentSiteId = normalizedId;
+    this.baseParams = { ...LANDING_SITES[normalizedId].startingParameters };
     if (this.exteriorVis) this.exteriorVis.setSite(this.currentSiteId);
+    if (window.jamnSegment4App?.engine) {
+      window.jamnSegment4App.engine.reset(normalizedId);
+    }
     this.render();
   }
 
   setScreen(screen) {
+    if (screen === 'prologue') {
+      sound.playClick();
+      if (typeof window.transitionToPrologue === 'function') {
+        window.transitionToPrologue('TITLE');
+      }
+      return;
+    }
+
     this.currentScreen = screen;
     sound.playClick();
 
@@ -972,6 +984,108 @@ export class Segment3App {
     }
   }
 }
+
+// Global Transitions between Segments 1 & 2 (Prologue) and Segments 3 & 4
+window.transitionToSegment3 = function(siteId) {
+  const chosenSite = siteId || window.JAMN_MAIN?.getConfirmedSiteId?.() || 'valles_marineris';
+  const mappedSiteId = (chosenSite === 'polar_ice_caps') ? 'north_polar' : chosenSite;
+
+  if (window.JAMN_SCENE && typeof window.JAMN_SCENE.pause === 'function') {
+    window.JAMN_SCENE.pause();
+  }
+
+  const prologueContainer = document.getElementById('prologue-container');
+  if (prologueContainer) {
+    prologueContainer.classList.add('hidden');
+    prologueContainer.style.display = 'none';
+  }
+
+  const header = document.querySelector('.mission-header');
+  const hudBar = document.querySelector('.parameters-hud-bar');
+  const navTabs = document.querySelector('.segment-nav-tabs');
+  const mainStage = document.querySelector('.main-stage-container');
+  const devDock = document.querySelector('.dev-simulation-dock');
+
+  if (header) header.classList.remove('hidden');
+  if (hudBar) hudBar.classList.remove('hidden');
+  if (navTabs) navTabs.classList.remove('hidden');
+  if (mainStage) mainStage.classList.remove('hidden');
+  if (devDock) devDock.classList.remove('hidden');
+
+  document.querySelectorAll('.segment-nav-tabs .nav-tab-btn').forEach(btn => {
+    btn.classList.toggle('active-tab', btn.getAttribute('data-target-screen') === 'base_entry');
+  });
+
+  if (window.jamnSegment3App) {
+    window.jamnSegment3App.setSite(mappedSiteId);
+    window.jamnSegment3App.setScreen('base_entry');
+    window.jamnSegment3App.triggerAirlockIngress();
+  }
+};
+
+window.transitionToPrologue = function(stageName = 'SURFACE') {
+  const header = document.querySelector('.mission-header');
+  const hudBar = document.querySelector('.parameters-hud-bar');
+  const navTabs = document.querySelector('.segment-nav-tabs');
+  const mainStage = document.querySelector('.main-stage-container');
+  const devDock = document.querySelector('.dev-simulation-dock');
+
+  if (header) header.classList.add('hidden');
+  if (hudBar) hudBar.classList.add('hidden');
+  if (navTabs) navTabs.classList.add('hidden');
+  if (mainStage) mainStage.classList.add('hidden');
+  if (devDock) devDock.classList.add('hidden');
+
+  const prologueContainer = document.getElementById('prologue-container');
+  if (prologueContainer) {
+    prologueContainer.classList.remove('hidden');
+    prologueContainer.style.display = 'block';
+  }
+
+  if (window.JAMN_SCENE && typeof window.JAMN_SCENE.resume === 'function') {
+    window.JAMN_SCENE.resume();
+  }
+
+  if (window.JAMN_MAIN && typeof window.JAMN_MAIN.goToStage === 'function') {
+    window.JAMN_MAIN.goToStage(stageName);
+  }
+};
+
+window.transitionToSegment4 = function(siteId) {
+  const chosenSite = siteId || window.JAMN_MAIN?.getConfirmedSiteId?.() || 'valles_marineris';
+  const mappedSiteId = (chosenSite === 'polar_ice_caps') ? 'north_polar' : chosenSite;
+
+  if (window.JAMN_SCENE && typeof window.JAMN_SCENE.pause === 'function') {
+    window.JAMN_SCENE.pause();
+  }
+
+  const prologueContainer = document.getElementById('prologue-container');
+  if (prologueContainer) {
+    prologueContainer.classList.add('hidden');
+    prologueContainer.style.display = 'none';
+  }
+
+  const header = document.querySelector('.mission-header');
+  const hudBar = document.querySelector('.parameters-hud-bar');
+  const navTabs = document.querySelector('.segment-nav-tabs');
+  const mainStage = document.querySelector('.main-stage-container');
+  const devDock = document.querySelector('.dev-simulation-dock');
+
+  if (header) header.classList.remove('hidden');
+  if (hudBar) hudBar.classList.remove('hidden');
+  if (navTabs) navTabs.classList.remove('hidden');
+  if (mainStage) mainStage.classList.remove('hidden');
+  if (devDock) devDock.classList.remove('hidden');
+
+  document.querySelectorAll('.segment-nav-tabs .nav-tab-btn').forEach(btn => {
+    btn.classList.toggle('active-tab', btn.getAttribute('data-target-screen') === 'game_engine');
+  });
+
+  if (window.jamnSegment3App) {
+    window.jamnSegment3App.setSite(mappedSiteId);
+    window.jamnSegment3App.setScreen('game_engine');
+  }
+};
 
 // Auto-instantiate upon DOM ready
 document.addEventListener('DOMContentLoaded', () => {

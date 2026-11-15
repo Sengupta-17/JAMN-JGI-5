@@ -1,0 +1,180 @@
+/* ============================================================================
+   JAMN GAME – MARS SURVIVAL MISSION TRAINER (MILESTONE 2)
+   File: style.css
+   Purpose: Restrained space-exploration visual theme (Deep Space Black/Navy,
+            Mars Rust/Red, Warm Orange Highlights, Neutral White/Grey Text).
+            Responsive HUD overlays that preserve visibility of 3D visuals.
+   ============================================================================ */
+
+:root {
+  --bg-space: #04060c;
+  --panel-bg: rgba(9, 13, 22, 0.82);
+  --panel-border: rgba(234, 88, 12, 0.38);
+  --mars-rust: #b84a24;
+  --mars-orange: #f97316;
+  --mars-amber: #fb923c;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --status-ok: #22c55e;
+  --status-warn: #f59e0b;
+  --status-danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#prologue-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 50;
+  pointer-events: none;
+}
+
+#prologue-container.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+#webgl-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+/* First-person Astronaut Helmet Visor Frame Overlay (Active in 1st-Person Surface Mode) */
+#helmet-visor-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  border: 18px solid rgba(15, 23, 42, 0.72);
+  border-radius: 42px;
+  box-shadow:
+    inset 0 0 80px rgba(234, 88, 12, 0.16),
+    inset 0 0 22px rgba(56, 189, 248, 0.14);
+  transition: opacity 0.35s ease;
+}
+
+/* Spacecraft Cockpit Window Vignette Overlay */
+#cockpit-frame-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: inset 0 0 110px rgba(4, 6, 12, 0.85);
+}
+
+/* UI Stage Layer Container */
+#ui-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+
+.pointer-auto {
+  pointer-events: auto;
+}
+
+/* Glassmorphic Scientific Telemetry Panels */
+.hud-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+.mono-readout {
+  font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+/* Buttons */
+.btn-mars {
+  background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+  color: #ffffff;
+  border: 1px solid #fb923c;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+}
+
+.btn-mars:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+}
+
+.btn-mars:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(30, 41, 59, 0.85);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: var(--mars-amber);
+}
+
+.btn-secondary.active-btn {
+  background: rgba(194, 65, 12, 0.4);
+  border-color: var(--mars-orange);
+  color: #fff;
+}
+
+/* Custom Scrollbar for Scientific Panels */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(234, 88, 12, 0.55);
+  border-radius: 3px;
+}
+
+/* Stage Transition Banner */
+#stage-toast {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+@media (max-width: 900px) {
+  #ui-layer {
+    padding: 8px 10px;
+  }
+}

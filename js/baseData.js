@@ -71,6 +71,8 @@ export const LANDING_SITES = {
   }
 };
 
+LANDING_SITES.polar_ice_caps = LANDING_SITES.north_polar;
+
 export const BASE_MODULES = [
   {
     id: 'eclss_module',

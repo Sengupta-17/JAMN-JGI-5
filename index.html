@@ -1,34 +1,773 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JAMN - Mars Base Operations (Segment 3)</title>
+  <title>ARES 01 – Mars Mission Simulation & Survival Trainer</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/prologue.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
 
+  <!-- ==================================================================== -->
+  <!-- SEGMENTS 1 & 2: PROLOGUE, DEEP-SPACE APPROACH, ORBIT & EDL DESCENT   -->
+  <!-- ==================================================================== -->
+  <div id="prologue-container">
+  <!-- 3D WebGL Viewport Container -->
+  <div id="webgl-container" aria-label="3D Mars Mission Simulation Viewport"></div>
+
+  <!-- First-Person Astronaut Helmet Visor Frame Overlay -->
+  <div id="helmet-visor-overlay" style="opacity: 0;"></div>
+
+  <!-- Spacecraft Cockpit Window Frame Vignette -->
+  <div id="cockpit-frame-overlay" class="hidden"></div>
+
+  <!-- Main UI / HUD Overlay Layer -->
+  <div id="ui-layer">
+
+    <!-- TOP MISSION NAVIGATION & TELEMETRY BAR (Visible on Stages 1-6) -->
+    <header id="top-mission-bar" class="hidden pointer-auto hud-panel px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+          <span class="font-extrabold tracking-wider text-sm text-white"> ARES 01 </span>
+        </div>
+        <span class="text-xs font-mono text-orange-400 hidden sm:inline">// MARS SURVIVAL MISSION TRAINER</span>
+      </div>
+
+      <!-- Continuous Stage Progress Bar -->
+      <nav class="flex flex-wrap items-center gap-1.5" aria-label="Mission Stage Navigation">
+        <button type="button" id="nav-pill-TITLE" onclick="window.JAMN_MAIN.goToStage('TITLE')">0. Title</button>
+        <button type="button" id="nav-pill-COCKPIT" onclick="window.JAMN_MAIN.goToStage('COCKPIT')">1. Cockpit</button>
+        <button type="button" id="nav-pill-ORBIT" onclick="window.JAMN_MAIN.goToStage('ORBIT')">2. Orbit</button>
+        <button type="button" id="nav-pill-SITE_ANALYSIS" onclick="window.JAMN_MAIN.goToStage('SITE_ANALYSIS')">3. Site Analysis</button>
+        <button type="button" id="nav-pill-DESCENT" onclick="window.JAMN_MAIN.goToStage('DESCENT')">4. EDL Descent</button>
+        <button type="button" id="nav-pill-SURFACE" onclick="window.JAMN_MAIN.goToStage('SURFACE')">5. Surface EVA</button>
+        <button type="button" id="nav-pill-HABITAT" onclick="window.JAMN_MAIN.enterHabitatAirlock()">6. Habitat</button>
+      </nav>
+
+      <!-- Utility Controls -->
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-secondary text-xs py-1 px-2.5" onclick="window.JAMN_MAIN.toggleReferenceModal(true)">
+          NASA Ref Data
+        </button>
+        <button type="button" id="btn-perf-nav" class="btn-secondary text-xs py-1 px-2.5" onclick="window.JAMN_MAIN.togglePerformanceMode()">
+          PERF: STANDARD 3D
+        </button>
+        <button type="button" id="btn-audio-mute" class="btn-secondary text-xs py-1 px-2.5" onclick="window.JAMN_MAIN.toggleAudioMute()">
+          AUDIO: ON
+        </button>
+        <button type="button" class="btn-secondary text-xs py-1 px-2.5 text-orange-300 border-orange-500/40" onclick="window.JAMN_MAIN.restartMission()">
+          Restart Mission
+        </button>
+        <button type="button" class="btn-mars text-xs py-1 px-2.5 ml-1" onclick="window.transitionToSegment3()">
+          Base Habitat (Seg 3) →
+        </button>
+        <button type="button" class="btn-secondary text-xs py-1 px-2.5" onclick="window.transitionToSegment4()">
+          Rover Sim (Seg 4) →
+        </button>
+      </div>
+    </header>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 0: OPENING TITLE SCREEN (Requirement #2)                     -->
+    <!-- ================================================================== -->
+    <section id="view-title" class="flex-1 flex items-center pointer-none">
+      <div class="pointer-auto hud-panel p-6 sm:p-8 max-w-xl border-l-4 border-l-orange-500">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-orange-950/70 border border-orange-500/50 text-orange-300 text-xs font-mono mb-4">
+          <span>JUNIOR MISSION ASTRONAUT</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+          ARES 01 
+        </h1>
+        <p class="text-lg sm:text-xl font-semibold text-orange-400 mt-1">
+          Mars Survival Mission Trainer
+        </p>
+        <p class="text-sm text-slate-300 mt-4 leading-relaxed">
+          Experience an end-to-end human expedition to Mars. Pilot your spacecraft from deep space into Martian orbit, evaluate four verified landing zones using official <a href="https://science.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline hover:text-orange-300">NASA Mars Science</a> reconnaissance data, execute atmospheric entry and powered descent, conduct first-person surface EVA, and command the Outpost Ares-1 habitat life-support systems.
+        </p>
+
+        <!-- Reference Conditions Quick Summary Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5 p-3 rounded bg-slate-900/90 border border-slate-800 text-xs">
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">SURFACE GRAVITY</div>
+            <div class="font-bold text-white mono-readout">~3.71 m/s²</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">MEAN TEMP</div>
+            <div class="font-bold text-white mono-readout">~ -60 °C</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">MEAN PRESSURE</div>
+            <div class="font-bold text-white mono-readout">~636 Pa</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">MARTIAN SOL</div>
+            <div class="font-bold text-white mono-readout">24h 37m</div>
+          </div>
+        </div>
+
+        <!-- Primary Action Buttons -->
+        <div class="flex flex-wrap items-center gap-3 mt-6">
+          <button type="button" id="btn-start-mission" class="btn-mars text-base px-7 py-3" onclick="window.JAMN_MAIN.goToStage('COCKPIT')">
+            Start Mission
+          </button>
+          <button type="button" id="btn-perf-title" class="btn-secondary py-3 px-4" onclick="window.JAMN_MAIN.togglePerformanceMode()">
+            PERF: STANDARD 3D
+          </button>
+          <button type="button" class="btn-secondary py-3 px-4" onclick="window.JAMN_MAIN.toggleReferenceModal(true)">
+            NASA Science Brief
+          </button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 mt-4 font-mono">
+          * Simulation Note: No human has landed on Mars yet. Human exploration visuals and spacecraft flight profiles are scientific mission simulations grounded in NASA reference parameters.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 1: SPACECRAFT COCKPIT & JOURNEY TOWARDS MARS (Requirement #3)-->
+    <!-- ================================================================== -->
+    <section id="view-cockpit" class="hidden flex-1 flex flex-col justify-between pointer-none mt-2">
+      <!-- Top Cockpit HUD Readout -->
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="pointer-auto hud-panel p-4 max-w-md">
+          <div class="text-xs font-mono text-orange-400">STAGE 1 // ARES-V CREW TRANSFER VEHICLE COCKPIT</div>
+          <h2 class="text-lg font-bold text-white mt-0.5">Trans-Mars Atmospheric Approach</h2>
+          <p id="cockpit-status-text" class="text-xs font-mono text-sky-400 mt-1">
+            DEEP SPACE APPROACH // OPTICAL NAVIGATION LOCK ON MARS
+          </p>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-3">
+            <div id="cockpit-progress-bar" class="bg-orange-500 h-full transition-all duration-100" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Live Spacecraft Telemetry Box -->
+        <div class="pointer-auto hud-panel p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">HELIO / MARS SPEED</div>
+            <div id="cockpit-speed" class="text-base font-bold text-orange-400 mono-readout">21.40 km/s</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">RANGE TO MARS</div>
+            <div id="cockpit-dist" class="text-base font-bold text-white mono-readout">48,920 km</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">MISSION TIME</div>
+            <div class="text-base font-bold text-emerald-400 mono-readout">T+ 204d 11h</div>
+          </div>
+          <div>
+            <div class="text-slate-400 font-mono text-[10px]">HULL / LIFE SUPPORT</div>
+            <div class="text-base font-bold text-sky-400 mono-readout">100% NOMINAL</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Cockpit Instrument Dashboard Controls -->
+      <div class="pointer-auto hud-panel p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-xs text-slate-300">
+          <span class="font-semibold text-white">Cockpit Flight Deck:</span> Observe Mars growing through the forward canopy window as the spacecraft approaches orbital capture altitude.
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button type="button" id="btn-cockpit-warp" class="btn-secondary" onclick="window.JAMN_MAIN.toggleCockpitWarp()">
+            ENGAGE APPROACH THRUST BOOST
+          </button>
+          <button type="button" id="btn-enter-orbit" class="btn-mars" onclick="window.JAMN_MAIN.goToStage('ORBIT')">
+            Continue to Mars Orbit →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 2: MARS ORBITAL EXPLORATION (Requirement #4)                 -->
+    <!-- ================================================================== -->
+    <section id="view-orbit" class="hidden flex-1 flex flex-col md:flex-row items-stretch justify-between gap-4 pointer-none mt-2 overflow-hidden">
+      <!-- Left Orbital Navigation Panel -->
+      <div class="pointer-auto hud-panel p-4 w-full md:w-80 flex flex-col justify-between overflow-y-auto custom-scroll">
+        <div>
+          <div class="text-xs font-mono text-orange-400">STAGE 2 // ORBITAL RECONNAISSANCE</div>
+          <h2 class="text-lg font-bold text-white mt-0.5">Select Landing Location</h2>
+          <p class="text-xs text-slate-300 mt-1">
+            Click any 3D beacon attached to the rotating Mars globe or choose one of the four verified destinations below to inspect its NASA terrain imagery and environmental profile.
+          </p>
+
+          <!-- 4 Landing Location Cards Populated by main.js -->
+          <div id="orbit-site-list" class="space-y-2.5 mt-3"></div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+          <button type="button" class="btn-secondary text-xs" onclick="window.JAMN_MAIN.goToStage('COCKPIT')">
+            ← Cockpit View
+          </button>
+          <button type="button" class="btn-mars text-xs" onclick="window.JAMN_MAIN.goToStage('SITE_ANALYSIS')">
+            Inspect Selected Site →
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Orbital Telemetry Badge -->
+      <div class="pointer-auto hud-panel p-3.5 self-end w-full md:w-72 text-xs">
+        <div class="font-mono text-sky-400 text-[11px]">ORBITAL TELEMETRY // MRO RELAY LINK</div>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <span class="text-slate-400 block text-[10px]">ORBIT ALTITUDE</span>
+            <span class="font-bold text-white mono-readout">400 km Polar</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">ORBITAL VELOCITY</span>
+            <span class="font-bold text-white mono-readout">3.36 km/s</span>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">
+          Tip: Drag the 3D Mars globe to rotate manually or click any glowing surface marker.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 3: LANDING LOCATION INFORMATION & ANALYSIS (Req #5 & #6)     -->
+    <!-- ================================================================== -->
+    <section id="view-site-analysis" class="hidden flex-1 flex flex-col lg:flex-row items-stretch justify-between gap-4 pointer-none mt-2 overflow-hidden">
+      <!-- Left Column: Quick Site Switcher & Return to Orbit -->
+      <div class="pointer-auto hud-panel p-4 w-full lg:w-72 flex flex-col justify-between">
+        <div>
+          <div class="text-xs font-mono text-orange-400" id="site-code">SITE-ALPHA // THARSIS</div>
+          <h2 class="text-xl font-extrabold text-white mt-0.5" id="site-title">Olympus Mons</h2>
+          <p class="text-xs text-orange-300 font-medium" id="site-subtitle">Largest Known Volcano in the Solar System</p>
+
+          <div class="mt-3 space-y-2 text-xs bg-slate-900/85 p-3 rounded border border-slate-800">
+            <div>
+              <span class="text-slate-400 font-mono text-[10px] block">VERIFIED COORDINATES</span>
+              <span id="site-coords" class="font-semibold text-white mono-readout">18.65° N, 226.2° E</span>
+            </div>
+            <div>
+              <span class="text-slate-400 font-mono text-[10px] block">ELEVATION / DEPTH (MOLA)</span>
+              <span id="site-elevation" class="font-semibold text-orange-400 mono-readout">+21.9 km</span>
+            </div>
+            <div>
+              <span class="text-slate-400 font-mono text-[10px] block">SURFACE TEMPERATURE</span>
+              <span id="site-temp" class="font-semibold text-white mono-readout">-75 °C</span>
+            </div>
+            <div>
+              <span class="text-slate-400 font-mono text-[10px] block">LOCAL PRESSURE</span>
+              <span id="site-pressure" class="font-semibold text-sky-400 mono-readout">30 to 72 Pa</span>
+            </div>
+            <div>
+              <span class="text-slate-400 font-mono text-[10px] block">CALIBRATED MISSION RESERVES</span>
+              <span id="site-resources" class="font-semibold text-emerald-400 mono-readout">O₂: 70% | Food: 75% | H₂O: 68% | Power: 72%</span>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="text-[11px] font-mono text-slate-400 mb-1.5">COMPARE OTHER DESTINATIONS:</div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" id="analysis-switch-olympus_mons" class="btn-secondary text-xs py-1 px-2" onclick="window.JAMN_MAIN.selectLandingSite('olympus_mons')">Olympus Mons</button>
+              <button type="button" id="analysis-switch-polar_ice_caps" class="btn-secondary text-xs py-1 px-2" onclick="window.JAMN_MAIN.selectLandingSite('polar_ice_caps')">Polar Ice Caps</button>
+              <button type="button" id="analysis-switch-valles_marineris" class="btn-secondary text-xs py-1 px-2" onclick="window.JAMN_MAIN.selectLandingSite('valles_marineris')">Valles Marineris</button>
+              <button type="button" id="analysis-switch-hellas_basin" class="btn-secondary text-xs py-1 px-2" onclick="window.JAMN_MAIN.selectLandingSite('hellas_basin')">Hellas Basin</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
+          <button type="button" id="btn-confirm-landing" class="btn-mars w-full py-2.5" onclick="window.JAMN_MAIN.confirmLandingSite()">
+            Confirm Landing Site →
+          </button>
+          <button type="button" class="btn-secondary w-full py-2" onclick="window.JAMN_MAIN.goToStage('ORBIT')">
+            ← Return to Orbit View
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: NASA Photograph & Environmental Analysis Dossier -->
+      <div class="pointer-auto hud-panel p-4 w-full lg:w-[500px] overflow-y-auto custom-scroll space-y-3">
+        <!-- Official NASA Image Frame with Fallback -->
+        <div class="rounded-lg overflow-hidden border border-slate-700 bg-slate-950">
+          <div class="px-3 py-1.5 bg-slate-900 flex items-center justify-between">
+            <span id="site-img-status" class="text-[11px] font-mono text-emerald-400">VERIFIED NASA / JPL ORBITAL IMAGERY</span>
+            <a id="site-source-link" href="https://science.nasa.gov/resource/viking-1-orbiter-image-olympus-mons/" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-orange-400 underline hover:text-orange-300">
+              Official NASA Source ↗
+            </a>
+          </div>
+          <img id="site-nasa-img" src="https://assets.science.nasa.gov/dynamicimage/assets/science/psd/mars/resources/detail_files/7/7664_Mars-viking-orbiter-olympus-mons-volcano-full2.jpg?w=1600&h=1480&fit=clip&crop=faces%2Cfocalpoint" alt="Official NASA Mars Reconnaissance Photograph" class="w-full h-44 object-cover" />
+          <div class="px-3 py-1.5 bg-slate-900/90 flex items-center justify-between text-[11px] text-slate-300">
+            <span id="site-image-credit">NASA / JPL – Viking 1 Orbiter Mosaic</span>
+            <a id="site-secondary-link" href="https://science.nasa.gov/photojournal/pj-olympus-mons-26/" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline hover:text-sky-300">
+              JPL Photojournal Data ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Scientific Breakdown Cards -->
+        <div class="space-y-2.5 text-xs leading-relaxed">
+          <div class="p-2.5 rounded bg-slate-900/75 border border-slate-800">
+            <div class="font-mono text-orange-400 text-[11px] font-semibold">SCIENTIFIC DESCRIPTION & GEOLOGY</div>
+            <p id="site-summary" class="text-slate-200 mt-1"></p>
+            <p id="site-terrain" class="text-slate-300 mt-1"></p>
+          </div>
+
+          <div class="p-2.5 rounded bg-slate-900/75 border border-slate-800">
+            <div class="font-mono text-sky-400 text-[11px] font-semibold">ATMOSPHERIC & TERRAIN CONDITIONS</div>
+            <p id="site-atmosphere" class="text-slate-200 mt-1"></p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="p-2.5 rounded bg-red-950/35 border border-red-800/60">
+              <div class="font-mono text-red-400 text-[11px] font-semibold">LANDING & OPERATIONAL RISKS</div>
+              <p id="site-risks" class="text-slate-200 mt-1"></p>
+            </div>
+            <div class="p-2.5 rounded bg-emerald-950/35 border border-emerald-800/60">
+              <div class="font-mono text-emerald-400 text-[11px] font-semibold">HUMAN MISSION ADVANTAGES</div>
+              <p id="site-advantages" class="text-slate-200 mt-1"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 4: SPACECRAFT DESCENT & LANDING SEQUENCE (Requirement #7)    -->
+    <!-- ================================================================== -->
+    <section id="view-descent" class="hidden flex-1 flex flex-col md:flex-row items-stretch justify-between gap-4 pointer-none mt-2 overflow-hidden">
+      <!-- Left 9-Stage EDL Sequence Tracker -->
+      <div class="pointer-auto hud-panel p-4 w-full md:w-96 flex flex-col justify-between overflow-y-auto custom-scroll">
+        <div>
+          <div class="text-xs font-mono text-orange-400">STAGE 4 // ENTRY, DESCENT & LANDING (EDL)</div>
+          <h2 class="text-lg font-bold text-white mt-0.5">Target: <span id="edl-target-name" class="text-orange-400">OLYMPUS MONS</span></h2>
+          <p id="edl-site-note" class="text-[11px] text-slate-300 mt-1 bg-slate-900/80 p-2 rounded border border-slate-800"></p>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mt-3">
+            <div id="edl-progress-bar" class="bg-orange-500 h-full transition-all duration-100" style="width: 0%;"></div>
+          </div>
+
+          <!-- 9 EDL Stages Checklist -->
+          <div id="edl-stage-list" class="space-y-1 mt-3"></div>
+        </div>
+
+        <div class="mt-3 pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+          * Mission Simulation Notice: Spacecraft descent profile and retro-propulsion telemetry represent a simplified human-scale Mars lander simulation.
+        </div>
+      </div>
+
+      <!-- Right EDL Live Telemetry & Touchdown Controls -->
+      <div class="pointer-auto hud-panel p-4 w-full md:w-80 self-end flex flex-col gap-3">
+        <div class="text-xs font-mono text-sky-400">LIVE EDL RADAR & THERMAL TELEMETRY</div>
+        <div class="grid grid-cols-2 gap-3 bg-slate-900/85 p-3 rounded border border-slate-800">
+          <div>
+            <div class="text-[10px] font-mono text-slate-400">ALTITUDE (AGL)</div>
+            <div id="edl-altitude" class="text-base font-bold text-white mono-readout">250.00 km</div>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-slate-400">DESCENT SPEED</div>
+            <div id="edl-speed" class="text-base font-bold text-orange-400 mono-readout">3,450 m/s</div>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-slate-400">HEAT SHIELD FLUX</div>
+            <div id="edl-heat" class="text-sm font-bold text-amber-400 mono-readout">0.0 kW/m²</div>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-slate-400">DECEL G-LOAD</div>
+            <div id="edl-gload" class="text-sm font-bold text-sky-400 mono-readout">0.00 g</div>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded bg-slate-900/70 border border-slate-800 text-xs">
+          <div class="text-[10px] font-mono text-slate-400">FLIGHT COMPUTER STATUS:</div>
+          <div id="edl-status-msg" class="text-slate-200 mt-0.5 font-medium">Aligning reaction control thrusters...</div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <button type="button" id="btn-deploy-astronaut" class="btn-mars w-full py-2.5" disabled onclick="window.JAMN_MAIN.goToStage('SURFACE')">
+            Step Onto Martian Surface (EVA) →
+          </button>
+          <div class="flex gap-2">
+            <button type="button" class="btn-secondary flex-1 text-xs" onclick="window.JAMN_MAIN.skipToTouchdown()">
+              Fast-Forward EDL
+            </button>
+            <button type="button" class="btn-secondary flex-1 text-xs" onclick="window.JAMN_MAIN.goToStage('ORBIT')">
+              Abort to Orbit
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 5: FIRST-PERSON / 3D ASTRONAUT EXPERIENCE & ENV MONITOR (#8,#9)-->
+    <!-- ================================================================== -->
+    <section id="view-surface" class="hidden flex-1 flex flex-col justify-between pointer-none mt-2 overflow-hidden">
+      <!-- Top Row: Mars Environmental Monitoring Panel (Left) & Comms / POV Controls (Right) -->
+      <div class="flex flex-col lg:flex-row items-start justify-between gap-3 overflow-y-auto max-h-[68vh]">
+        <!-- Mars Environmental Monitoring Panel (Requirement #9) -->
+        <div class="pointer-auto hud-panel p-4 w-full lg:w-96 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-orange-400 text-[11px]">MARS ENVIRONMENTAL MONITORING</span>
+            <span id="env-site-name" class="font-bold text-white">Olympus Mons</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2.5 bg-slate-900/85 p-2.5 rounded border border-slate-800">
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">SURFACE TEMP</span>
+              <span id="env-temp" class="font-semibold text-white mono-readout">-75 °C (Ref: -60 °C)</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">ATMOS. PRESSURE</span>
+              <span id="env-pressure" class="font-semibold text-sky-400 mono-readout">30-72 Pa (Ref: 636 Pa)</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">GRAVITY</span>
+              <span id="env-gravity" class="font-semibold text-white mono-readout">3.71 m/s² (~0.38 g)</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">SOLAR RADIATION</span>
+              <span id="env-radiation" class="font-semibold text-amber-400 mono-readout">200–300 mSv/yr</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-[10px] font-mono text-slate-400 block">ATMOSPHERIC COMPOSITION</span>
+              <span id="env-comp" class="font-semibold text-slate-200 mono-readout">95.32% CO₂, 2.7% N₂, 1.6% Ar, 0.13% O₂</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-[10px] font-mono text-slate-400 block">LOCAL DUST & WATER AVAILABILITY</span>
+              <span id="env-dust" class="text-slate-300 block">Low high-altitude dust opacity</span>
+              <span id="env-water" class="text-sky-300 block">Very Low (<2% bound regolith minerals)</span>
+            </div>
+          </div>
+
+          <!-- EVA Suit & Habitat Telemetry -->
+          <div class="grid grid-cols-2 gap-2 mt-2 p-2 rounded bg-slate-900/60 border border-slate-800">
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">SUIT O₂ SUPPLY</span>
+              <span id="env-suit-o2" class="font-bold text-emerald-400 mono-readout">98.4%</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">PLSS BATTERY</span>
+              <span id="env-suit-battery" class="font-bold text-emerald-400 mono-readout">96.0%</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">HABITAT STATUS</span>
+              <span class="font-bold text-sky-400 mono-readout">PRESSURIZED (21.5°C)</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block">AIRLOCK RANGE</span>
+              <span id="surface-hab-dist" class="font-bold text-orange-400 mono-readout">78 m to Airlock</span>
+            </div>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1.5 font-mono">
+            * Reference values: Gravity ~3.71 m/s², Mean Temp ~-60°C, Mean Pressure ~636 Pa (95% CO₂), Sol ~24h 37m. Local conditions vary.
+          </div>
+        </div>
+
+        <!-- Right Panel: Camera POV Switcher, NASA Surface Reference & Mission Comms -->
+        <div class="pointer-auto hud-panel p-4 w-full lg:w-80 space-y-3 text-xs">
+          <div>
+            <div class="font-mono text-orange-400 text-[11px] mb-1">ASTRONAUT VIEW PERSPECTIVE (SIMULATION)</div>
+            <div class="flex gap-2">
+              <button type="button" id="btn-pov-first" class="btn-secondary active-btn text-xs py-1.5 px-3 flex-1" onclick="window.JAMN_MAIN.toggleAstronautPov('FIRST_PERSON')">
+                1st-Person Helmet POV
+              </button>
+              <button type="button" id="btn-pov-third" class="btn-secondary text-xs py-1.5 px-3 flex-1" onclick="window.JAMN_MAIN.toggleAstronautPov('THIRD_PERSON')">
+                3rd-Person 3D Suit
+              </button>
+            </div>
+          </div>
+
+          <!-- Official NASA Surface Rover Reference Photo -->
+          <div class="rounded overflow-hidden border border-slate-700 bg-slate-950">
+            <div class="px-2.5 py-1 bg-slate-900 flex items-center justify-between text-[10px] font-mono">
+              <span class="text-slate-300">NASA PERSEVERANCE SURFACE REF</span>
+              <a href="https://science.nasa.gov/mission/mars-2020-perseverance/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">NASA Mars 2020 ↗</a>
+            </div>
+            <img id="surface-nasa-ref-img" src="https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26344/PIA26344.gif" alt="NASA Perseverance Rover Surface View" class="w-full h-24 object-cover" />
+          </div>
+
+          <!-- Mission Communications Interface -->
+          <div>
+            <div class="font-mono text-sky-400 text-[11px]">MISSION COMMS LOG // CAPCOM HOUSTON</div>
+            <div id="surface-comms-log" class="mt-1 max-h-24 overflow-y-auto custom-scroll text-[11px] font-mono text-slate-300 bg-slate-950/80 p-2 rounded border border-slate-800"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row: On-Screen Astronaut Movement Pad & Enter Habitat Button -->
+      <div class="pointer-auto hud-panel p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <!-- Touch / Click & Keyboard Movement Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-300 mr-1">EVA WALK CONTROLS (WASD / Arrows):</span>
+          <button type="button" class="btn-secondary py-1.5 px-3" onmousedown="window.JAMN_SCENE.triggerAstronautMove('left', true)" onmouseup="window.JAMN_SCENE.triggerAstronautMove('left', false)" onclick="window.JAMN_SCENE.moveAstronautStep(0, 0, 0.25)">
+            ↺ Turn Left
+          </button>
+          <button type="button" class="btn-secondary py-1.5 px-3" onmousedown="window.JAMN_SCENE.triggerAstronautMove('forward', true)" onmouseup="window.JAMN_SCENE.triggerAstronautMove('forward', false)" onclick="window.JAMN_SCENE.moveAstronautStep(0, 3.5, 0)">
+            ↑ Walk Forward
+          </button>
+          <button type="button" class="btn-secondary py-1.5 px-3" onmousedown="window.JAMN_SCENE.triggerAstronautMove('backward', true)" onmouseup="window.JAMN_SCENE.triggerAstronautMove('backward', false)" onclick="window.JAMN_SCENE.moveAstronautStep(0, -2.5, 0)">
+            ↓ Step Back
+          </button>
+          <button type="button" class="btn-secondary py-1.5 px-3" onmousedown="window.JAMN_SCENE.triggerAstronautMove('right', true)" onmouseup="window.JAMN_SCENE.triggerAstronautMove('right', false)" onclick="window.JAMN_SCENE.moveAstronautStep(0, 0, -0.25)">
+            ↻ Turn Right
+          </button>
+          <button type="button" class="btn-secondary py-1.5 px-3 text-orange-300 border-orange-500/40" onclick="window.JAMN_MAIN.collectRegolithSample()">
+            ⛏ Collect Regolith Sample
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span id="surface-airlock-prompt" class="hidden text-xs font-mono text-emerald-400 animate-pulse">
+            [AIRLOCK PROXIMITY REACHED]
+          </span>
+          <button type="button" id="btn-enter-habitat" class="btn-mars py-2.5 px-5" onclick="window.JAMN_MAIN.goToStage('HABITAT')">
+            Enter Mars Habitat Airlock →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- STAGE 6: MARS HABITAT & SURVIVAL MISSION (Requirement #10)         -->
+    <!-- ================================================================== -->
+    <section id="view-habitat" class="hidden flex-1 flex flex-col lg:flex-row items-stretch justify-between gap-4 pointer-none mt-2 overflow-hidden">
+      <!-- Left Column: Habitat Life-Support Monitoring & Resource Gauges -->
+      <div class="pointer-auto hud-panel p-5 w-full lg:w-[440px] flex flex-col justify-between overflow-y-auto custom-scroll">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono text-orange-400">STAGE 6 // OUTPOST ARES-1 HABITAT</span>
+            <span id="hab-sol-counter" class="px-2.5 py-0.5 rounded bg-orange-600 text-white font-mono text-xs font-bold">SOL 1</span>
+          </div>
+          <h2 class="text-xl font-extrabold text-white mt-1">Mars Habitat & Survival Command</h2>
+          <p class="text-xs text-slate-300 mt-1">
+            Location: <strong id="hab-site-label" class="text-orange-300">Olympus Mons</strong>. Human survival on Mars requires balancing solar energy, MOXIE oxygen generation, Sabatier water recycling, and hydroponic food production against extreme cold and dust accumulation.
+          </p>
+
+          <div class="mt-3">
+            <span id="hab-mission-badge" class="px-2.5 py-1 rounded text-xs font-mono bg-amber-950/80 text-amber-300 border border-amber-500/60">
+              HABITAT STANDBY
+            </span>
+          </div>
+
+          <!-- 6 Core Life-Support Telemetry Bars -->
+          <div class="space-y-3 mt-4 bg-slate-900/85 p-3.5 rounded-lg border border-slate-800 text-xs">
+            <div>
+              <div class="flex justify-between font-mono">
+                <span class="text-slate-300">POWER SUPPLY (SOLAR + KILOPOWER)</span>
+                <span id="hab-power-val" class="font-bold text-amber-400">92%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1">
+                <div id="hab-power-bar" class="bg-amber-400 h-full transition-all" style="width: 92%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between font-mono">
+                <span class="text-slate-300">OXYGEN STATUS (MOXIE CO₂ ELECTROLYSIS)</span>
+                <span id="hab-o2-val" class="font-bold text-sky-400">96%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1">
+                <div id="hab-o2-bar" class="bg-sky-400 h-full transition-all" style="width: 96%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between font-mono">
+                <span class="text-slate-300">WATER SUPPLY (ICE DRILL & SABATIER)</span>
+                <span id="hab-water-val" class="font-bold text-cyan-400">88%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1">
+                <div id="hab-water-bar" class="bg-cyan-400 h-full transition-all" style="width: 88%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between font-mono">
+                <span class="text-slate-300">FOOD SUPPLY (HYDROPONIC GROW RACKS)</span>
+                <span id="hab-food-val" class="font-bold text-emerald-400">94%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1">
+                <div id="hab-food-bar" class="bg-emerald-400 h-full transition-all" style="width: 94%;"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              <div>
+                <span class="text-[10px] font-mono text-slate-400 block">INTERNAL TEMP REGULATION</span>
+                <span id="hab-temp-val" class="font-bold text-white mono-readout">+21.5 °C (Regulated)</span>
+              </div>
+              <div>
+                <span class="text-[10px] font-mono text-slate-400 block">COMMUNICATION STATUS</span>
+                <span id="hab-comms-val" class="font-bold text-emerald-400 mono-readout">DSN LINK NOMINAL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap gap-2">
+          <button type="button" id="btn-begin-survival" class="btn-mars flex-1 py-2.5" onclick="window.JAMN_MAIN.beginSurvivalMission()">
+            Begin Survival Mission
+          </button>
+          <button type="button" class="btn-secondary py-2.5 px-3" onclick="window.JAMN_MAIN.goToStage('SURFACE')">
+            ← Exit Airlock (EVA)
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Survival Resource Operations & Log -->
+      <div class="pointer-auto hud-panel p-5 w-full lg:w-96 flex flex-col justify-between overflow-y-auto custom-scroll">
+        <div>
+          <div class="text-xs font-mono text-sky-400">HABITAT OPERATIONS CONSOLE</div>
+          <h3 class="text-base font-bold text-white mt-0.5">Resource & Environmental Controls</h3>
+          <p class="text-xs text-slate-300 mt-1">
+            Execute daily habitat maintenance tasks and advance Martian Sols to test your outpost's long-duration survival resilience.
+          </p>
+
+          <div class="grid grid-cols-1 gap-2 mt-3">
+            <button type="button" class="btn-secondary text-left p-2.5 flex items-center justify-between" onclick="window.JAMN_MAIN.performHabitatAction('SCRUB_DUST')">
+              <span>⚡ Clear Solar Array Dust</span>
+              <span class="text-emerald-400 font-mono text-xs">+12% Power</span>
+            </button>
+            <button type="button" class="btn-secondary text-left p-2.5 flex items-center justify-between" onclick="window.JAMN_MAIN.performHabitatAction('MOXIE_BOOST')">
+              <span>🫧 Run MOXIE CO₂ Electrolysis</span>
+              <span class="text-sky-400 font-mono text-xs">+14% O₂ / -8% Pwr</span>
+            </button>
+            <button type="button" class="btn-secondary text-left p-2.5 flex items-center justify-between" onclick="window.JAMN_MAIN.performHabitatAction('ICE_EXTRACTION')">
+              <span>🧊 Extract Regolith / Polar Ice</span>
+              <span class="text-cyan-400 font-mono text-xs">+H₂O / -7% Pwr</span>
+            </button>
+            <button type="button" class="btn-secondary text-left p-2.5 flex items-center justify-between" onclick="window.JAMN_MAIN.performHabitatAction('HYDROPONICS_HARVEST')">
+              <span>🌱 Harvest Hydroponic Crops</span>
+              <span class="text-emerald-400 font-mono text-xs">+15% Food / -6% H₂O</span>
+            </button>
+            <button type="button" class="btn-mars text-center py-2.5 mt-1" onclick="window.JAMN_MAIN.performHabitatAction('ADVANCE_SOL')">
+              Advance to Next Martian Sol (24h 37m) →
+            </button>
+          </div>
+
+          <div class="mt-4">
+            <div class="text-[11px] font-mono text-slate-400">HABITAT TELEMETRY LOG:</div>
+            <div id="hab-log-box" class="mt-1 max-h-36 overflow-y-auto custom-scroll text-xs font-mono text-slate-300 bg-slate-950/85 p-2.5 rounded border border-slate-800"></div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+          <button type="button" class="btn-secondary text-xs" onclick="window.JAMN_MAIN.goToStage('ORBIT')">
+            Change Landing Site
+          </button>
+          <button type="button" class="btn-secondary text-xs text-orange-300 border-orange-500/40" onclick="window.JAMN_MAIN.restartMission()">
+            Restart Full Mission
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Toast Banner for Smooth Transitions -->
+    <div id="stage-toast" class="pointer-none fixed bottom-4 left-1/2 -translate-x-1/2 opacity-0 translate-y-2 z-30">
+      <div class="hud-panel px-4 py-2 border-orange-500 bg-slate-950/90 text-xs font-mono text-orange-300 shadow-xl">
+        <span id="stage-toast-text">MISSION STATUS UPDATED</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- NASA MARS REFERENCE SCIENCE & ATTRIBUTION MODAL                      -->
+  <!-- ==================================================================== -->
+  <div id="nasa-reference-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 pointer-auto">
+    <div class="hud-panel max-w-2xl w-full p-6 space-y-4 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <div class="text-xs font-mono text-orange-400">OFFICIAL SCIENTIFIC REFERENCE & ATTRIBUTION</div>
+          <h3 class="text-xl font-bold text-white">NASA Mars Planetary Baseline & Image Sources</h3>
+        </div>
+        <button type="button" class="btn-secondary text-xs" onclick="window.JAMN_MAIN.toggleReferenceModal(false)">
+          Close ✕
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-slate-900/90 p-3.5 rounded border border-slate-800">
+        <div>
+          <span class="text-slate-400 font-mono text-[10px] block">SURFACE GRAVITY</span>
+          <span id="modal-ref-gravity" class="font-bold text-white mono-readout">3.71 m/s²</span>
+        </div>
+        <div>
+          <span class="text-slate-400 font-mono text-[10px] block">MEAN SURFACE TEMP</span>
+          <span id="modal-ref-temp" class="font-bold text-white mono-readout">-60 °C</span>
+        </div>
+        <div>
+          <span class="text-slate-400 font-mono text-[10px] block">MEAN PRESSURE</span>
+          <span id="modal-ref-pressure" class="font-bold text-white mono-readout">636 Pa</span>
+        </div>
+        <div class="col-span-2">
+          <span class="text-slate-400 font-mono text-[10px] block">ATMOSPHERE COMPOSITION</span>
+          <span id="modal-ref-atmo" class="font-bold text-white mono-readout">95.32% CO₂, 2.7% N₂, 1.6% Ar</span>
+        </div>
+        <div>
+          <span class="text-slate-400 font-mono text-[10px] block">SOLAR DAY (SOL)</span>
+          <span id="modal-ref-sol" class="font-bold text-white mono-readout">24h 37m 22s</span>
+        </div>
+      </div>
+
+      <p id="modal-ref-disclaimer" class="text-xs text-slate-300 leading-relaxed"></p>
+
+      <div class="space-y-2 text-xs">
+        <div class="font-mono text-orange-400 font-semibold">VERIFIED NASA / JPL DATA & IMAGERY SOURCES:</div>
+        <ul class="space-y-1.5 text-slate-300 list-disc pl-5">
+          <li>
+            <strong>Olympus Mons:</strong> NASA/JPL Viking 1 Orbiter Image (<a href="https://science.nasa.gov/resource/viking-1-orbiter-image-olympus-mons/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">science.nasa.gov/resource/viking-1-orbiter-image-olympus-mons</a>) & Mars Odyssey THEMIS (<a href="https://science.nasa.gov/photojournal/pj-olympus-mons-26/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">PIA25912 / PJ-Olympus-Mons-26</a>).
+          </li>
+          <li>
+            <strong>Polar Ice Caps (Planum Boreum):</strong> NASA/JPL-Caltech/MSSS Mars Reconnaissance Orbiter MARCI Image (<a href="https://science.nasa.gov/resource/northern-ice-cap-of-mars/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">PIA13163</a>).
+          </li>
+          <li>
+            <strong>Valles Marineris:</strong> NASA/JPL/USGS Viking Orbiter Global Mosaic (<a href="https://science.nasa.gov/photojournal/valles-marineris/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">PIA00422</a>) & MRO CRISM Coprates Chasma (<a href="https://www.jpl.nasa.gov/images/pia10074-the-layer-cake-walls-of-valles-marineris/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">PIA10074</a>).
+          </li>
+          <li>
+            <strong>Hellas Basin (Hellas Planitia):</strong> NASA/JPL/GSFC Mars Global Surveyor MOLA Topographic Map (<a href="https://science.nasa.gov/resource/topographic-map-of-hellas-planitia/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">MGS Hellas Planitia MOLA</a>).
+          </li>
+          <li>
+            <strong>Martian Surface Reference:</strong> NASA/JPL-Caltech Perseverance Rover Mastcam-Z Panorama (<a href="https://science.nasa.gov/mission/mars-2020-perseverance/" target="_blank" rel="noopener noreferrer" class="text-orange-400 underline">PIA26344</a>).
+          </li>
+        </ul>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button type="button" class="btn-mars text-xs py-2 px-5" onclick="window.JAMN_MAIN.toggleReferenceModal(false)">
+          Return to Mission Simulation
+        </button>
+      </div>
+    </div>
+  </div>
+  </div>
+
   <!-- MISSION HEADER -->
-  <header class="mission-header">
+  <header class="mission-header hidden">
     <div class="brand-section">
       <div class="mission-logo">🚀</div>
       <div>
-        <div class="mission-title">JUNIOR ASTRONAUT MISSION TRAINER</div>
-        <div class="mission-subtitle">SEGMENT 3 // BASE ENTRY, INFO, 3D FIRST-PERSON NAVIGATION & CHALLENGES</div>
+        <div class="mission-title">ARES 01</div>
+        <div class="mission-subtitle">JUNIOR ASTRONAUT MISSION TRAINER</div>
       </div>
     </div>
 
     <!-- SITE TELEMETRY SUMMARY -->
     <div class="site-telemetry-strip">
-      <div><span class="telem-label">EXPEDITION:</span><span id="headerSolDisplay" class="telem-val" style="color: #f59e0b; font-weight: 700;">SOL 01 / 30</span></div>
-      <div><span class="telem-label">SITE:</span><span id="headerSiteName" class="telem-val">Valles Marineris</span></div>
-      <div><span class="telem-label">COORDS:</span><span id="headerCoordinates" class="telem-val">14.0°S, 301.0°E</span></div>
-      <div><span class="telem-label">TEMP:</span><span id="headerSurfaceTemp" class="telem-val">-70°C to +5°C</span></div>
+      <div><span class="telem-label">EXPEDITION:</span><span id="headerSolDisplay" class="telem-val"
+          style="color: #f59e0b; font-weight: 700;">SOL 01 / 30</span></div>
+      <div><span class="telem-label">SITE:</span><span id="headerSiteName" class="telem-val">Valles Marineris</span>
+      </div>
+      <div><span class="telem-label">COORDS:</span><span id="headerCoordinates" class="telem-val">14.0°S, 301.0°E</span>
+      </div>
+      <div><span class="telem-label">TEMP:</span><span id="headerSurfaceTemp" class="telem-val">-70°C to +5°C</span>
+      </div>
       <div><span class="telem-label">ATM:</span><span id="headerAtmosphere" class="telem-val">0.95 kPa</span></div>
-      <div><span class="telem-label">PHYSICS:</span><span class="telem-val" style="color: #38bdf8;">0.38g GAZEBO</span></div>
+      <div><span class="telem-label">PHYSICS:</span><span class="telem-val" style="color: #38bdf8;">0.38g GAZEBO</span>
+      </div>
     </div>
 
     <div class="header-controls">
@@ -40,14 +779,15 @@
   <div id="globalAlarmBanner" class="alarm-banner hidden"></div>
 
   <!-- STRICTLY 4 BASE PARAMETERS HUD -->
-  <div class="parameters-hud-bar">
+  <div class="parameters-hud-bar hidden">
     <div id="baseParametersHUD" class="parameters-grid">
       <!-- Populated dynamically: Oxygen, Food, Water, Power -->
     </div>
   </div>
 
   <!-- SEGMENT 3 & 4 NAVIGATION TABS -->
-  <nav class="segment-nav-tabs">
+  <nav class="segment-nav-tabs hidden">
+    <button class="nav-tab-btn" data-target-screen="prologue" id="tabBtnPrologue">0. FLIGHT & LANDING</button>
     <button class="nav-tab-btn active-tab" data-target-screen="base_entry">1. BASE ENTRY</button>
     <button class="nav-tab-btn" data-target-screen="base_info">2. BASE INFO</button>
     <button class="nav-tab-btn" data-target-screen="base_nav">3. 3D BASE EXPLORATION & REPAIR</button>
@@ -56,7 +796,7 @@
   </nav>
 
   <!-- MAIN WORKSPACE STAGE -->
-  <main class="main-stage-container">
+  <main class="main-stage-container hidden">
 
     <!-- SCREEN A: BASE ENTRY -->
     <section id="screen_base_entry" class="screen-panel active-screen">
@@ -66,7 +806,8 @@
           <div class="visualizer-overlay-info">
             <div class="entry-brief">
               <h2>SURFACE HABITAT ALPHA-1 // INGRESS READY</h2>
-              <p>Touchdown confirmed on Martian soil. The pressurized inflatable habitat and 3D-printed regolith storm shell are fully sealed. Initiate airlock cycle to enter the base in full First-Person 3D view.</p>
+              <p>Touchdown confirmed on Martian soil. The pressurized inflatable habitat and 3D-printed regolith storm
+                shell are fully sealed. Initiate airlock cycle to enter the base in full First-Person 3D view.</p>
             </div>
             <button id="btnEnterBase" class="btn-primary-action">
               🚪 INITIATE AIRLOCK INGRESS
@@ -79,7 +820,7 @@
     <!-- SCREEN B: BASE INFO -->
     <section id="screen_base_info" class="screen-panel">
       <div class="info-layout">
-        
+
         <!-- NEW GRAPHIC: 30-SOL MISSION EXPEDITION TIMELINE & CURRENT DAY -->
         <div class="info-card sol-expedition-card" style="grid-column: 1 / -1;">
           <div class="expedition-header">
@@ -99,7 +840,8 @@
               <div class="sol-ring-graphic">
                 <svg viewBox="0 0 100 100" class="sol-svg-ring">
                   <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                  <circle id="solRingFill" class="ring-fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="255"></circle>
+                  <circle id="solRingFill" class="ring-fill" cx="50" cy="50" r="42" stroke-dasharray="264"
+                    stroke-dashoffset="255"></circle>
                 </svg>
                 <div class="ring-inner-text">
                   <span id="baseInfoDialNum" class="ring-num">01</span>
@@ -107,10 +849,13 @@
                 </div>
               </div>
               <div class="sol-dial-stats">
-                <div><span class="stat-lbl">SOLS COMPLETED:</span> <strong id="baseInfoSolsCompleted">0</strong> sols</div>
-                <div><span class="stat-lbl">SOLS REMAINING:</span> <strong id="baseInfoSolsRemaining">30</strong> sols</div>
+                <div><span class="stat-lbl">SOLS COMPLETED:</span> <strong id="baseInfoSolsCompleted">0</strong> sols
+                </div>
+                <div><span class="stat-lbl">SOLS REMAINING:</span> <strong id="baseInfoSolsRemaining">30</strong> sols
+                </div>
                 <div><span class="stat-lbl">CYCLE DURATION:</span> <strong>60s / sol</strong></div>
-                <div><span class="stat-lbl">RESET RULE:</span> <span style="color: var(--text-muted); font-size: 10px;">Browser reload restarts from Day 1</span></div>
+                <div><span class="stat-lbl">RESET RULE:</span> <span
+                    style="color: var(--text-muted); font-size: 10px;">Browser reload restarts from Day 1</span></div>
               </div>
             </div>
 
@@ -153,16 +898,21 @@
               </div>
             </div>
             <p id="infoSiteDesc" class="site-desc-text">
-              The Grand Canyon of Mars, descending 7 km into the crust. Towering cliffs offer natural radiation shielding and mild microclimates, providing a balanced starting baseline for long-duration surface habitation.
+              The Grand Canyon of Mars, descending 7 km into the crust. Towering cliffs offer natural radiation
+              shielding and mild microclimates, providing a balanced starting baseline for long-duration surface
+              habitation.
             </p>
           </div>
 
           <div class="info-card">
             <h3>ECLSS CLOSED-LOOP ARCHITECTURE</h3>
             <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
-              Habitat Alpha-1 operates on an advanced closed-loop regenerative life support system engineered in collaboration with NASA and ESA. Walk through the base in first-person to inspect and interact with the physical hardware.
+              Habitat Alpha-1 operates on an advanced closed-loop regenerative life support system engineered in
+              collaboration with NASA and ESA. Walk through the base in first-person to inspect and interact with the
+              physical hardware.
             </p>
-            <button class="btn-tactical" data-target-screen="base_nav" style="width: 100%; padding: 10px; font-weight: 700;">
+            <button class="btn-tactical" data-target-screen="base_nav"
+              style="width: 100%; padding: 10px; font-weight: 700;">
               ENTER 3D FIRST-PERSON BASE →
             </button>
           </div>
@@ -192,7 +942,7 @@
         <div id="threeViewportContainer" class="three-viewport-wrap">
           <!-- Reticle -->
           <div class="fpv-crosshair"></div>
-          
+
           <!-- Proximity Interaction Prompt -->
           <div id="fpvInteractionPrompt" class="fpv-prompt-banner hidden">
             PRESS [E] TO INSPECT TERMINAL
@@ -205,10 +955,14 @@
 
           <!-- Mini Parameter HUD overlay (top-left) -->
           <div id="fpvMiniHUD" class="fpv-mini-hud">
-            <div class="mini-hud-row" id="miniHudOxygen"><span class="mini-icon">💨</span> <span class="mini-val">--</span></div>
-            <div class="mini-hud-row" id="miniHudFood"><span class="mini-icon">🌱</span> <span class="mini-val">--</span></div>
-            <div class="mini-hud-row" id="miniHudWater"><span class="mini-icon">💧</span> <span class="mini-val">--</span></div>
-            <div class="mini-hud-row" id="miniHudPower"><span class="mini-icon">⚡</span> <span class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudOxygen"><span class="mini-icon">💨</span> <span
+                class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudFood"><span class="mini-icon">🌱</span> <span
+                class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudWater"><span class="mini-icon">💧</span> <span
+                class="mini-val">--</span></div>
+            <div class="mini-hud-row" id="miniHudPower"><span class="mini-icon">⚡</span> <span
+                class="mini-val">--</span></div>
           </div>
 
           <!-- Exit fullscreen button -->
@@ -248,9 +1002,10 @@
         <div class="challenge-header-intro">
           <h2>MISSION CHALLENGES & HAZARD PROFILE</h2>
           <p>
-            Review the operational challenges of Martian survival below. 
-            <span style="color: #f59e0b; font-weight: 700;">NOTE: Manual challenge selection is disabled.</span> 
-            Upon launching into Segment 4, Mission Control Houston will <strong>randomly assign</strong> your mission scenario based on incoming Mars weather and orbital telemetry.
+            Review the operational challenges of Martian survival below.
+            <span style="color: #f59e0b; font-weight: 700;">NOTE: Manual challenge selection is disabled.</span>
+            Upon launching into Segment 4, Mission Control Houston will <strong>randomly assign</strong> your mission
+            scenario based on incoming Mars weather and orbital telemetry.
           </p>
         </div>
 
@@ -275,10 +1030,12 @@
           <!-- Populated dynamically with the randomly assigned challenge -->
         </div>
         <p>
-          Segment 3 hand-off event <code>challengeSelected(siteId, challengeType)</code> has been successfully dispatched to the Segment 4 Game Engine. Base telemetry and starting parameters have been calibrated.
+          Segment 3 hand-off event <code>challengeSelected(siteId, challengeType)</code> has been successfully
+          dispatched to the Segment 4 Game Engine. Base telemetry and starting parameters have been calibrated.
         </p>
         <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
-          <button id="btnEnterSegment4Direct" class="btn-primary-action" data-target-screen="game_engine" style="padding: 12px 28px;">
+          <button id="btnEnterSegment4Direct" class="btn-primary-action" data-target-screen="game_engine"
+            style="padding: 12px 28px;">
             🎮 ENTER 3D MARS SURFACE SIMULATION (SEGMENT 4) →
           </button>
           <button class="btn-tactical" data-target-screen="base_nav">
@@ -307,13 +1064,16 @@
           <!-- METEOROLOGY & ENVIRONMENTAL TELEMETRY -->
           <div class="engine-env-strip">
             <div><span class="hud-label">ATM OPACITY:</span><span id="hudStormTau" class="hud-val">Tau: 0.5</span></div>
-            <div><span class="hud-label">RADIATION:</span><span id="hudRadiationDose" class="hud-val">0.66 mSv</span></div>
+            <div><span class="hud-label">RADIATION:</span><span id="hudRadiationDose" class="hud-val">0.66 mSv</span>
+            </div>
             <div><span class="hud-label">DEBT:</span><span id="hudConditioningDebt" class="hud-val">0 pts</span></div>
-            <div><span class="hud-label">CREW-HOURS:</span><span id="hudCrewHours" class="hud-val ch-val">20 / 20 CH</span></div>
+            <div><span class="hud-label">CREW-HOURS:</span><span id="hudCrewHours" class="hud-val ch-val">20 / 20
+                CH</span></div>
           </div>
 
           <div class="engine-header-actions">
-            <button id="btnPauseSimulation" class="btn-tactical pause-btn" title="Pause simulation (P)">⏸️ PAUSE</button>
+            <button id="btnPauseSimulation" class="btn-tactical pause-btn" title="Pause simulation (P)">⏸️
+              PAUSE</button>
             <button id="btnOpenBriefingModal" class="btn-tactical">📋 SOL BRIEFING</button>
           </div>
         </div>
@@ -391,7 +1151,7 @@
         <!-- 3D MARS SURFACE SIMULATOR VIEWPORT -->
         <div class="surface-viewport-container">
           <div id="surfaceSimulatorContainer" class="surface-canvas-wrap"></div>
-          
+
           <!-- Viewport Overlay with Camera View Switcher -->
           <div class="surface-viewport-overlay">
             <div class="camera-controls-cluster">
@@ -411,7 +1171,8 @@
                 <div>PHASE: <strong id="pausePhaseVal" style="color: #38bdf8;">DAY</strong></div>
                 <div>CYCLE REMAINING: <strong id="pauseSecondsVal" style="color: #10b981;">42s</strong></div>
               </div>
-              <button id="btnResumeOverlay" class="btn-primary-action" style="padding: 10px 28px; margin-top: 14px; width: 100%;">
+              <button id="btnResumeOverlay" class="btn-primary-action"
+                style="padding: 10px 28px; margin-top: 14px; width: 100%;">
                 ▶️ RESUME SIMULATION (P)
               </button>
             </div>
@@ -464,7 +1225,8 @@
                   <span class="tile-cost">COST: 2 CH</span>
                 </div>
               </button>
-              <button id="btnActExercise" class="btn-action-tile" title="Daily 1.2h countermeasure preventing conditioning debt">
+              <button id="btnActExercise" class="btn-action-tile"
+                title="Daily 1.2h countermeasure preventing conditioning debt">
                 <span class="tile-icon">🏋️</span>
                 <div class="tile-info">
                   <span class="tile-name">Complete Exercise Block</span>
@@ -485,7 +1247,8 @@
                   <span class="tile-cost">COST: 4 CH</span>
                 </div>
               </button>
-              <button id="btnActBerm" class="btn-action-tile" title="Shields habitat with regolith berm, halving SPE dose">
+              <button id="btnActBerm" class="btn-action-tile"
+                title="Shields habitat with regolith berm, halving SPE dose">
                 <span class="tile-icon">🧱</span>
                 <div class="tile-info">
                   <span class="tile-name">Build Regolith Berm</span>
@@ -529,7 +1292,7 @@
       <div class="completed-badge">MARTIAN SOL CYCLE CONCLUDED</div>
       <h2>SOL <span id="completedSolNumber">01</span> COMPLETE</h2>
       <p class="completed-desc">
-        Nightfall has fallen over the landing site. Surface EVA and rover operations are sealed for the sol. 
+        Nightfall has fallen over the landing site. Surface EVA and rover operations are sealed for the sol.
         Telemetry and resource buffers have been synchronized with Base Alpha-1.
       </p>
 
@@ -538,8 +1301,10 @@
       </div>
 
       <div class="completed-next-step">
-        <p>Return to the base habitat to review updated Sol telemetry, inspect hardware modules, and launch <strong>Sol <span id="nextSolNumber">02</span></strong> with a fresh daily operational challenge!</p>
-        <button id="btnReturnToBaseAfterSol" class="btn-primary-action" style="padding: 12px 32px; font-size: 14px; margin-top: 10px;">
+        <p>Return to the base habitat to review updated Sol telemetry, inspect hardware modules, and launch <strong>Sol
+            <span id="nextSolNumber">02</span></strong> with a fresh daily operational challenge!</p>
+        <button id="btnReturnToBaseAfterSol" class="btn-primary-action"
+          style="padding: 12px 32px; font-size: 14px; margin-top: 10px;">
           🚪 ENTER BASE HABITAT & PREPARE NEXT SOL →
         </button>
       </div>
@@ -576,8 +1341,9 @@
       <div class="handover-icon">🪐</div>
       <h2 id="handoverTitle">MISSION COMPLETED</h2>
       <div id="handoverGradeBadge" class="handover-badge success">Certified Handover Ready</div>
-      <p id="handoverReasonText" class="handover-reason">All resource reserves >= 25%. Base ready for next astronaut.</p>
-      
+      <p id="handoverReasonText" class="handover-reason">All resource reserves >= 25%. Base ready for next astronaut.
+      </p>
+
       <div id="handoverStatsGrid" class="handover-stats-grid">
         <!-- Filled dynamically -->
       </div>
@@ -594,7 +1360,7 @@
   <div id="actionNoticeToast" class="action-notice-toast hidden"></div>
 
   <!-- SIMULATION / DEV TESTING DOCK -->
-  <footer class="dev-simulation-dock">
+  <footer class="dev-simulation-dock hidden">
     <div class="dock-header">
       <span class="dock-title">SEGMENT 3 INTEGRATION TEST HARNESS</span>
       <span style="font-size: 10px; color: var(--text-dim);">SHARED CONTRACT: SECTION 1.4 COMPLIANT</span>
@@ -624,7 +1390,16 @@
   </footer>
 
   <!-- STANDALONE THREE.JS ENGINE -->
+  <!-- STANDALONE THREE.JS ENGINE -->
   <script src="js/vendor/three.min.js"></script>
+
+  <!-- SEGMENTS 1 & 2 (PROLOGUE: DEEP SPACE, ORBIT, EDL, SURFACE EVA) -->
+  <script src="js/prologue/data.js"></script>
+  <script src="js/prologue/scene.js"></script>
+  <script src="js/prologue/main.js"></script>
+
+  <!-- SEGMENT 3 & 4 (BASE HABITAT & 30-SOL SURFACE SIMULATION) -->
   <script type="module" src="js/segment3App.js"></script>
 </body>
+
 </html>

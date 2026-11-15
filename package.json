@@ -7,7 +7,7 @@
   "scripts": {
     "start": "python -m http.server 3000",
     "serve": "npx --yes serve .",
-    "test": "node tests/test_parameters.js && node tests/test_pause_and_daily_loop.js && node tests/test_base_telemetry_and_repair.js"
+    "test": "node tests/test_parameters.js && node tests/test_pause_and_daily_loop.js && node tests/test_base_telemetry_and_repair.js && node tests/test_segment1_2_integration.js"
   },
   "keywords": [
     "mars",

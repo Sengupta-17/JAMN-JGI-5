@@ -48,6 +48,7 @@ export const SITE_MODIFIERS = {
     doseFactor: 0.90
   }
 };
+SITE_MODIFIERS.polar_ice_caps = SITE_MODIFIERS.north_polar;
 
 export const SITE_STARTING_PARAMETERS = {
   north_polar: { oxygen: 78, food: 60, water: 92, power: 55 },
@@ -55,6 +56,7 @@ export const SITE_STARTING_PARAMETERS = {
   valles_marineris: { oxygen: 70, food: 75, water: 68, power: 72 },
   hellas_basin: { oxygen: 82, food: 62, water: 58, power: 50 }
 };
+SITE_STARTING_PARAMETERS.polar_ice_caps = SITE_STARTING_PARAMETERS.north_polar;
 
 export class ParameterEngine {
   constructor(siteId = 'valles_marineris') {

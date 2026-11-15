@@ -10,3 +10,6 @@ This directory contains technical and scientific documentation for the implement
 
 3. [Subsystems & Scientific Specifications](subsystems_and_science.md)
    - Authentic NASA habitat modules, life support systems (OGA, Sabatier, CDRA, VCD Centrifuge, Kilopower), landing sites, and mission challenges.
+
+4. [Segment 1 & 2 Integration Specification](SEGMENT_1_2_INTEGRATION_SPEC.md)
+   - Trans-Mars flight deck, orbital reconnaissance, EDL descent, surface EVA, calibrated starting parameters, and seamless transition into Segment 3 airlock ingress.
