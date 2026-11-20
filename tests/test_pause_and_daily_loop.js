@@ -57,10 +57,10 @@ console.log('--- TESTING PAUSE AND DAILY RETURN TO BASE LOOP ---\n');
   loop.startSol(1);
   assert(loop.currentSol === 1, 'Sol 1 started');
 
-  // Advance clock to completion (60 seconds)
-  loop.update(60.0);
+  // Advance clock to completion (120 seconds for 2-minute sol)
+  loop.update(120.0);
 
-  assert(completedPayload !== null, 'onSolCompleteCallbacks triggered upon reaching 60s');
+  assert(completedPayload !== null, 'onSolCompleteCallbacks triggered upon reaching 120s');
   assert(completedPayload.completedSol === 1, 'completedSol is 1');
   assert(completedPayload.nextSol === 2, 'nextSol is 2');
   assert(loop.currentSol === 2, 'loop.currentSol advanced in memory to 2');

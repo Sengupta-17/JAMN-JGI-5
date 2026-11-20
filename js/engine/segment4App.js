@@ -9,6 +9,69 @@ import { ParameterEngine, SITE_MODIFIERS, SITE_STARTING_PARAMETERS } from './par
 import { HazardManager } from './hazards/hazardManager.js';
 import { SimulationLoop } from './simulationLoop.js';
 import { MarsSurfaceSimulator } from './surfaceSimulator.js';
+import { getMarsFieldNote } from './marsFieldNotesData.js';
+import { getTerminalMessage } from './missionEndMessages.js';
+import { sound } from '../audio.js';
+
+class TypewriterController {
+  constructor(textElement, cursorElement, onComplete) {
+    this.textElement = textElement;
+    this.cursorElement = cursorElement;
+    this.onComplete = onComplete;
+    this.timer = null;
+    this.fullText = '';
+    this.currentIndex = 0;
+    this.isFinished = false;
+  }
+
+  start(text, speedMs = 35) {
+    this.cancel();
+    this.fullText = text || '';
+    this.currentIndex = 0;
+    this.isFinished = false;
+
+    if (this.textElement) this.textElement.textContent = '';
+    if (this.cursorElement) this.cursorElement.classList.remove('hidden');
+
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.skip();
+      return;
+    }
+
+    const typeNext = () => {
+      if (this.currentIndex < this.fullText.length) {
+        if (this.textElement) this.textElement.textContent += this.fullText.charAt(this.currentIndex);
+        this.currentIndex++;
+        this.timer = setTimeout(typeNext, speedMs);
+      } else {
+        this.finish();
+      }
+    };
+
+    typeNext();
+  }
+
+  skip() {
+    this.cancel();
+    if (this.textElement) this.textElement.textContent = this.fullText;
+    this.finish();
+  }
+
+  finish() {
+    this.isFinished = true;
+    if (this.cursorElement) this.cursorElement.classList.add('hidden');
+    if (typeof this.onComplete === 'function') {
+      this.onComplete();
+    }
+  }
+
+  cancel() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+}
 
 export class Segment4App {
   constructor() {
@@ -23,6 +86,9 @@ export class Segment4App {
 
     this.isAttached = false;
     this.lastRenderTimestamp = performance.now();
+
+    this.fieldNoteTypewriter = null;
+    this.terminalTypewriter = null;
   }
 
   init() {
@@ -54,6 +120,33 @@ export class Segment4App {
       }
     });
 
+    // Skip typewriter buttons
+    const btnSkipFieldNote = document.getElementById('btnSkipFieldNoteAnimation');
+    if (btnSkipFieldNote) {
+      btnSkipFieldNote.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.fieldNoteTypewriter) this.fieldNoteTypewriter.skip();
+      });
+    }
+
+    const btnSkipTerminal = document.getElementById('btnSkipTerminalAnimation');
+    if (btnSkipTerminal) {
+      btnSkipTerminal.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.terminalTypewriter) this.terminalTypewriter.skip();
+      });
+    }
+
+    // Typewriter instances
+    this.fieldNoteTypewriter = new TypewriterController(
+      document.getElementById('fieldNoteBody'),
+      document.getElementById('fieldNoteCursor')
+    );
+    this.terminalTypewriter = new TypewriterController(
+      document.getElementById('handoverReasonText'),
+      document.getElementById('terminalCursor')
+    );
+
     // Conservation mode toggles
     const modeBtns = document.querySelectorAll('.btn-conserve-mode');
     modeBtns.forEach((btn) => {
@@ -74,6 +167,16 @@ export class Segment4App {
         if (this.surfaceSim) {
           this.surfaceSim.toggleCameraMode();
           btnToggleCamera.textContent = `VIEW: ${this.surfaceSim.cameraMode.toUpperCase()} (V)`;
+        }
+      });
+    }
+
+    // Surface Station Proximity Interact Button
+    const btnSurfaceInteract = document.getElementById('btnSurfaceInteract');
+    if (btnSurfaceInteract) {
+      btnSurfaceInteract.addEventListener('click', () => {
+        if (this.surfaceSim) {
+          this.surfaceSim.triggerActiveInteraction();
         }
       });
     }
@@ -140,6 +243,9 @@ export class Segment4App {
     contractBus.on('challengeSelected', (payload) => {
       this.siteId = payload.siteId || this.siteId;
       this.challengeType = payload.challengeType || 'standard';
+      if (this.surfaceSim && this.surfaceSim.rover) {
+        this.surfaceSim.rover.setNightLight(false);
+      }
       this.startMission();
     });
 
@@ -153,6 +259,12 @@ export class Segment4App {
   }
 
   resetMission() {
+    if (this.fieldNoteTypewriter) {
+      this.fieldNoteTypewriter.cancel();
+    }
+    if (this.terminalTypewriter) {
+      this.terminalTypewriter.cancel();
+    }
     if (this.loop) {
       this.loop.reset();
     }
@@ -161,6 +273,10 @@ export class Segment4App {
     }
     if (this.surfaceSim) {
       this.surfaceSim.resetInputKeys();
+      this.surfaceSim.resetAllInteractions();
+      if (this.surfaceSim.rover) {
+        this.surfaceSim.rover.setNightLight(false);
+      }
     }
     this.missionStarted = false;
     this.updatePauseUI(false);
@@ -182,12 +298,15 @@ export class Segment4App {
         const now = performance.now();
         const dt = Math.min(0.1, (now - this.lastRenderTimestamp) / 1000.0);
         this.lastRenderTimestamp = now;
-        this.surfaceSim.update(dt, data.solProgress, this.engine.stormOpacityTau);
+        this.surfaceSim.update(dt, data.solProgress, this.engine.stormOpacityTau, data.phase);
       }
     });
 
     this.loop.onSolChangeCallbacks.push((data) => {
       this.showMorningBriefing(data);
+      if (this.surfaceSim) {
+        this.surfaceSim.onNewSol(data.sol);
+      }
     });
 
     this.loop.onSolCompleteCallbacks.push((data) => {
@@ -205,6 +324,10 @@ export class Segment4App {
     }
     if (this.surfaceSim) {
       this.surfaceSim.resetInputKeys();
+      this.surfaceSim.resetAllInteractions();
+      if (this.surfaceSim.rover) {
+        this.surfaceSim.rover.setNightLight(false);
+      }
     }
     this.updatePauseUI(true);
     this.showActionNotice('Simulation paused.', false);
@@ -264,6 +387,8 @@ export class Segment4App {
   }
 
   handleSolComplete(data) {
+    if (this.loop.isGameOver) return; // Suppress field note if mission already failed
+
     const modal = document.getElementById('solCompletedModal');
     if (!modal) return;
 
@@ -271,30 +396,74 @@ export class Segment4App {
     if (solNumEl) solNumEl.textContent = String(data.completedSol).padStart(2, '0');
 
     const nextSolNumEl = document.getElementById('nextSolNumber');
-    if (nextSolNumEl) nextSolNumEl.textContent = String(data.nextSol).padStart(2, '0');
+    if (nextSolNumEl) nextSolNumEl.textContent = String(Math.min(30, data.nextSol)).padStart(2, '0');
 
     const statsEl = document.getElementById('completedSolStats');
     if (statsEl) {
       statsEl.innerHTML = `
-        <div class="completed-stat-box"><span>OXYGEN</span><strong>${data.parameters.oxygen.toFixed(1)}%</strong></div>
-        <div class="completed-stat-box"><span>FOOD</span><strong>${data.parameters.food.toFixed(1)}%</strong></div>
-        <div class="completed-stat-box"><span>WATER</span><strong>${data.parameters.water.toFixed(1)}%</strong></div>
-        <div class="completed-stat-box"><span>POWER</span><strong>${data.parameters.power.toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>OXYGEN</span><strong>${Math.max(0, data.parameters.oxygen).toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>FOOD</span><strong>${Math.max(0, data.parameters.food).toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>WATER</span><strong>${Math.max(0, data.parameters.water).toFixed(1)}%</strong></div>
+        <div class="completed-stat-box"><span>POWER</span><strong>${Math.max(0, data.parameters.power).toFixed(1)}%</strong></div>
       `;
     }
 
-    modal.classList.remove('hidden');
+    // Populate Segment 5 Mars Field Note Card (§1.1, §2.2)
+    const note = getMarsFieldNote(data.completedSol);
+    const solPad = String(data.completedSol).padStart(2, '0');
+    const fieldNoteSolLabel = document.getElementById('fieldNoteSolLabel');
+    if (fieldNoteSolLabel) fieldNoteSolLabel.textContent = `SOL ${solPad} • FIELD NOTE ${solPad}`;
 
-    const btnReturn = document.getElementById('btnReturnToBaseAfterSol');
-    if (btnReturn) {
-      btnReturn.onclick = () => {
-        modal.classList.add('hidden');
-        if (window.jamnSegment3App) {
-          window.jamnSegment3App.syncParameters(data.parameters);
-          window.jamnSegment3App.setScreen('base_info');
-        }
-      };
+    const fieldNoteTitle = document.getElementById('fieldNoteTitle');
+    if (fieldNoteTitle) fieldNoteTitle.textContent = note.title;
+
+    const fieldNoteSourceLabel = document.getElementById('fieldNoteSourceLabel');
+    if (fieldNoteSourceLabel) fieldNoteSourceLabel.textContent = note.sourceLabel;
+
+    const fieldNoteSourceLink = document.getElementById('fieldNoteSourceLink');
+    if (fieldNoteSourceLink) {
+      fieldNoteSourceLink.href = note.sourceUrl;
+      fieldNoteSourceLink.textContent = 'Read source ↗';
     }
+
+    if (this.fieldNoteTypewriter) {
+      this.fieldNoteTypewriter.start(note.body, 35);
+    }
+
+    const promptEl = document.getElementById('completedSolNextPrompt');
+    const btnReturn = document.getElementById('btnReturnToBaseAfterSol');
+
+    if (data.completedSol >= 30) {
+      // Sol 30 behaviour: Prompt final review (§1.2, §2.1)
+      if (promptEl) {
+        promptEl.textContent = 'All 30 Martian sols have been completed! Review final life-support telemetry and inspect the mission handover certification.';
+      }
+      if (btnReturn) {
+        btnReturn.textContent = 'REVIEW FINAL MISSION OUTCOME →';
+        btnReturn.onclick = () => {
+          modal.classList.add('hidden');
+          if (this.fieldNoteTypewriter) this.fieldNoteTypewriter.cancel();
+          this.loop.evaluateMissionHandover();
+        };
+      }
+    } else {
+      if (promptEl) {
+        promptEl.innerHTML = `Return to the base habitat to review updated Sol telemetry, inspect hardware modules, and launch <strong>Sol <span id="nextSolNumber">${String(data.nextSol).padStart(2, '0')}</span></strong> with a fresh daily operational challenge!`;
+      }
+      if (btnReturn) {
+        btnReturn.textContent = '🚪 ENTER BASE HABITAT & PREPARE NEXT SOL →';
+        btnReturn.onclick = () => {
+          modal.classList.add('hidden');
+          if (this.fieldNoteTypewriter) this.fieldNoteTypewriter.cancel();
+          if (window.jamnSegment3App) {
+            window.jamnSegment3App.syncParameters(data.parameters);
+            window.jamnSegment3App.setScreen('base_info');
+          }
+        };
+      }
+    }
+
+    modal.classList.remove('hidden');
   }
 
   startMission() {
@@ -318,6 +487,18 @@ export class Segment4App {
     const surfaceContainer = document.getElementById('surfaceSimulatorContainer');
     if (surfaceContainer && !this.surfaceSim) {
       this.surfaceSim = new MarsSurfaceSimulator(surfaceContainer);
+      this.surfaceSim.onInteractionTriggered = (actionResult) => {
+        this.handleSurfaceInteraction(actionResult);
+      };
+    } else if (this.surfaceSim && !this.surfaceSim.onInteractionTriggered) {
+      this.surfaceSim.onInteractionTriggered = (actionResult) => {
+        this.handleSurfaceInteraction(actionResult);
+      };
+    }
+
+    // Automatically extinguish rover night light on sol start (launching from challenge briefing)
+    if (this.surfaceSim && this.surfaceSim.rover) {
+      this.surfaceSim.rover.setNightLight(false);
     }
 
     // Configure challenge scenario for this sol
@@ -458,37 +639,126 @@ export class Segment4App {
     const modal = document.getElementById('handoverModal');
     if (!modal) return;
 
+    // Suppress day completed modal if active
+    document.getElementById('solCompletedModal')?.classList.add('hidden');
+    if (this.fieldNoteTypewriter) this.fieldNoteTypewriter.cancel();
+
+    const terminalMsg = getTerminalMessage(data.status, data.endReason, data.solReached);
+
+    const dialogEl = document.getElementById('handoverDialog');
+    if (dialogEl) {
+      const variantClass = terminalMsg.isSuccess
+        ? (data.handoverGrade === 'Certified Handover Ready' ? 'success' : 'success-marginal')
+        : 'failure';
+      dialogEl.className = `handover-dialog ${variantClass}`;
+    }
+
+    const iconEl = document.getElementById('handoverIcon');
+    if (iconEl) iconEl.textContent = terminalMsg.icon;
+
     const titleEl = document.getElementById('handoverTitle');
-    const badgeEl = document.getElementById('handoverGradeBadge');
-    const reasonEl = document.getElementById('handoverReasonText');
-    const statsEl = document.getElementById('handoverStatsGrid');
-
     if (titleEl) {
-      titleEl.textContent = (data.status === 'success') ? 'MISSION COMPLETED' : 'MISSION TERMINATED';
-      titleEl.style.color = (data.status === 'success') ? 'var(--green-nominal)' : 'var(--red-critical)';
+      titleEl.textContent = terminalMsg.heading;
+      titleEl.className = `handover-title ${terminalMsg.isSuccess ? 'success' : 'failure'}`;
     }
 
+    const badgeEl = document.getElementById('handoverGradeBadge');
     if (badgeEl) {
-      badgeEl.textContent = data.handoverGrade;
-      badgeEl.className = `handover-badge ${data.status === 'success' ? 'success' : 'failure'}`;
+      badgeEl.textContent = terminalMsg.badge;
+      badgeEl.className = `handover-badge ${terminalMsg.isSuccess ? 'success' : 'failure'}`;
     }
 
-    if (reasonEl) {
-      reasonEl.textContent = data.endReason;
+    if (this.terminalTypewriter) {
+      this.terminalTypewriter.start(terminalMsg.body, 35);
+    } else {
+      const reasonEl = document.getElementById('handoverReasonText');
+      if (reasonEl) reasonEl.textContent = terminalMsg.body;
     }
 
+    const statsEl = document.getElementById('handoverStatsGrid');
     if (statsEl) {
+      const sampleBonus = (data.cachedSamples || 0) * 5;
       statsEl.innerHTML = `
         <div class="stat-box"><span>SOL REACHED:</span><strong>${data.solReached} / 30</strong></div>
-        <div class="stat-box"><span>OXYGEN:</span><strong>${data.parameters.oxygen.toFixed(1)}%</strong></div>
-        <div class="stat-box"><span>FOOD:</span><strong>${data.parameters.food.toFixed(1)}%</strong></div>
-        <div class="stat-box"><span>WATER:</span><strong>${data.parameters.water.toFixed(1)}%</strong></div>
-        <div class="stat-box"><span>POWER:</span><strong>${data.parameters.power.toFixed(1)}%</strong></div>
+        <div class="stat-box"><span>OXYGEN:</span><strong>${Math.max(0, data.parameters.oxygen).toFixed(1)}%</strong></div>
+        <div class="stat-box"><span>FOOD:</span><strong>${Math.max(0, data.parameters.food).toFixed(1)}%</strong></div>
+        <div class="stat-box"><span>WATER:</span><strong>${Math.max(0, data.parameters.water).toFixed(1)}%</strong></div>
+        <div class="stat-box"><span>POWER:</span><strong>${Math.max(0, data.parameters.power).toFixed(1)}%</strong></div>
+        <div class="stat-box"><span>CACHED SAMPLES:</span><strong>${data.cachedSamples || 0} / 5 (+${sampleBonus}% BONUS)</strong></div>
         <div class="stat-box"><span>RADIATION DOSE:</span><strong>${data.radiationDose_mSv.toFixed(1)} mSv</strong></div>
       `;
     }
 
     modal.classList.remove('hidden');
+  }
+
+  handleSurfaceInteraction(actionResult) {
+    if (!actionResult || !actionResult.success) {
+      if (actionResult?.message) this.showActionNotice(actionResult.message, false);
+      return;
+    }
+
+    // 1. Apply simulation parameter updates
+    if (actionResult.delta) {
+      if (typeof actionResult.delta.water === 'number') {
+        this.engine.parameters.water = Math.min(100, +(this.engine.parameters.water + actionResult.delta.water).toFixed(2));
+      }
+      if (typeof actionResult.delta.power === 'number') {
+        this.engine.parameters.power = Math.min(100, +(this.engine.parameters.power + actionResult.delta.power).toFixed(2));
+      }
+      if (typeof actionResult.delta.oxygen === 'number') {
+        this.engine.parameters.oxygen = Math.min(100, +(this.engine.parameters.oxygen + actionResult.delta.oxygen).toFixed(2));
+      }
+      if (typeof actionResult.delta.soilingReduction === 'number') {
+        this.engine.arraySoiling = Math.max(0.01, +(this.engine.arraySoiling * (1 - actionResult.delta.soilingReduction)).toFixed(3));
+      }
+      if (typeof actionResult.delta.tauReduction === 'number') {
+        this.engine.stormOpacityTau = Math.max(0.2, +(this.engine.stormOpacityTau - actionResult.delta.tauReduction).toFixed(2));
+      }
+      if (typeof actionResult.delta.cachedSample === 'number') {
+        this.engine.cachedSamples = Math.min(5, (this.engine.cachedSamples || 0) + actionResult.delta.cachedSample);
+      }
+      this.engine.recomputeRates();
+    }
+
+    // 2. Trigger procedural audio feedback
+    try {
+      if (sound) {
+        if (actionResult.stationId === 'ice_drill_site') {
+          sound.playBeep(980, 0.15, 'triangle');
+          setTimeout(() => sound.playSuccess(), 120);
+        } else if (actionResult.stationId === 'solar_sweeper_hub') {
+          sound.playAirRelease(0.6);
+          setTimeout(() => sound.playSuccess(), 100);
+        } else if (actionResult.stationId === 'weather_station_post') {
+          sound.playBeep(1760, 0.08);
+          setTimeout(() => sound.playBeep(2200, 0.1), 90);
+          setTimeout(() => sound.playSuccess(), 220);
+        } else if (actionResult.stationId === 'mineral_sample_cache') {
+          sound.playClank();
+          setTimeout(() => sound.playSuccess(), 140);
+        } else if (actionResult.stationId === 'airlock_terminal') {
+          sound.playAirRelease(0.7);
+          setTimeout(() => sound.playSuccess(), 120);
+        } else {
+          sound.playSuccess();
+        }
+      }
+    } catch (e) {
+      // Audio optional in headless/restricted contexts
+    }
+
+    // 3. User feedback toast
+    this.showActionNotice(actionResult.message, true);
+
+    // 4. Contract event bus dispatch
+    contractBus.emit('surfaceInteractionCompleted', {
+      stationId: actionResult.stationId,
+      actionId: actionResult.actionId,
+      delta: actionResult.delta,
+      sol: this.loop.currentSol,
+      cachedSamples: this.engine.cachedSamples || 0
+    });
   }
 
   showActionNotice(msg, isSuccess = true) {

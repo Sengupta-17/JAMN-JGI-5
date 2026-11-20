@@ -4,6 +4,8 @@
  */
 
 import { sound } from './audio.js';
+import { pbrFactory } from './engine/graphics/pbrMaterials.js';
+import { PostProcessingPipeline } from './engine/graphics/postProcessingPipeline.js';
 
 const THREE = typeof window !== 'undefined' ? window.THREE : null;
 
@@ -15,6 +17,7 @@ export class ThreeBaseRenderer {
     this.scene = null;
     this.camera = null;
     this.renderer = null;
+    this.postProcessing = null;
     
     // First-person camera orientation
     this.yaw = 0;   // horizontal rotation (radians)
@@ -76,6 +79,13 @@ export class ThreeBaseRenderer {
       }
       this.container.appendChild(this.renderer.domElement);
 
+      // 2B. Cinematic Post-Processing Pipeline (Safe Direct Forward Fallback)
+      this.postProcessing = new PostProcessingPipeline(this.renderer, this.scene, this.camera, {
+        enabled: false,
+        enableBloom: false,
+        enableAO: false
+      });
+
       // 3. Habitat Architecture & Modules
       this.setupLighting();
       this.buildExternalMartianLandscape();
@@ -110,6 +120,9 @@ export class ThreeBaseRenderer {
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h);
+      if (this.postProcessing) {
+        this.postProcessing.setSize(w, h);
+      }
     }
   }
 
@@ -175,11 +188,7 @@ export class ThreeBaseRenderer {
 
     // Outer Terrain Ground
     const extTerrainGeo = new THREE.RingGeometry(17.6, 160.0, 48);
-    const extTerrainMat = new THREE.MeshStandardMaterial({
-      color: 0x943818,
-      roughness: 0.95,
-      metalness: 0.05
-    });
+    const extTerrainMat = pbrFactory.getRegolithMaterial({ repeatX: 8, repeatY: 8 });
     const extTerrain = new THREE.Mesh(extTerrainGeo, extTerrainMat);
     extTerrain.rotation.x = -Math.PI / 2;
     extTerrain.position.y = -0.15;
@@ -187,12 +196,8 @@ export class ThreeBaseRenderer {
     this.scene.add(extTerrain);
 
     // External Solar Panel Arrays
-    const solarMat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a8a,
-      metalness: 0.85,
-      roughness: 0.2
-    });
-    const solarFrameMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 });
+    const solarMat = pbrFactory.getSolarPanelMaterial();
+    const solarFrameMat = pbrFactory.getAerospaceMetalMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.35 });
 
     for (let s = 0; s < 6; s++) {
       const angle = 0.8 + s * 0.35;
@@ -213,7 +218,7 @@ export class ThreeBaseRenderer {
     }
 
     // External Surface Boulders
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x6e2c14, roughness: 0.9 });
+    const rockMat = pbrFactory.getBasaltRockMaterial();
     for (let r = 0; r < 24; r++) {
       const ra = (r / 24) * Math.PI * 2 + 0.15;
       const rd = 22.0 + (r % 7) * 9.0;
@@ -243,15 +248,7 @@ export class ThreeBaseRenderer {
     this.scene.add(wireframe);
 
     // Transparent Glass Panels
-    const greenhouseGlassMat = new THREE.MeshStandardMaterial({
-      color: 0xd6f0f7,
-      roughness: 0.04,
-      metalness: 0.85,
-      transparent: true,
-      opacity: 0.18,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    const greenhouseGlassMat = pbrFactory.getPolycarbonateDomeMaterial();
     const domeMesh = new THREE.Mesh(domeGeo, greenhouseGlassMat);
     domeMesh.position.y = 2.5;
     this.scene.add(domeMesh);
@@ -917,6 +914,10 @@ export class ThreeBaseRenderer {
     }
 
     // 8. Render 3D Frame
-    this.renderer.render(this.scene, this.camera);
+    if (this.postProcessing && this.postProcessing.enabled && this.postProcessing.isReady) {
+      this.postProcessing.render(dt);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 }

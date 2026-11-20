@@ -1,8 +1,14 @@
 /**
- * Terrain Manager for Mars Surface Simulation (Segment 4)
+ * Terrain Manager for Mars Surface Simulation (Segment 4 - Phase 1)
  * Provides dynamic chunk streaming, Level of Detail (LOD), procedural Martian topography,
  * gap-free skirts, rock instancing, and analytical elevation sampling for physics.
+ * Enhanced with PBR Regolith normal mapping and basalt rock materials.
  */
+
+import * as THREE_MODULE from 'three';
+import { pbrFactory } from '../graphics/pbrMaterials.js';
+
+const THREE = (typeof window !== 'undefined' && window.THREE) ? window.THREE : THREE_MODULE;
 
 export class TerrainManager {
   constructor(scene, options = {}) {
@@ -16,51 +22,15 @@ export class TerrainManager {
     this.chunks = new Map(); // key: "x,z" -> chunk object
     this.instancedRocks = null;
 
-    // Martian terrain materials
-    this.terrainMaterial = this.createMarsTerrainMaterial();
+    // Martian terrain materials (PBR with normal & roughness maps)
+    this.terrainMaterial = pbrFactory.getRegolithMaterial({ repeatX: 4, repeatY: 4 });
 
     // Reusable vector for elevation sampling
     this._tempNormal = new THREE.Vector3();
   }
 
   createMarsTerrainMaterial() {
-    // High-performance procedural Canvas texture for Martian regolith
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-
-    // Base rusty Martian orange-red gradient
-    const grad = ctx.createLinearGradient(0, 0, 512, 512);
-    grad.addColorStop(0, '#a34828');
-    grad.addColorStop(0.5, '#bd5732');
-    grad.addColorStop(1, '#823218');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 512);
-
-    // Procedural mineral noise & crater pebbles
-    for (let i = 0; i < 15000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const r = Math.random() * 2.5;
-      const shade = Math.floor(Math.random() * 60) - 30;
-      ctx.fillStyle = `rgba(${175 + shade}, ${85 + shade}, ${45 + shade}, 0.25)`;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(4, 4);
-
-    return new THREE.MeshStandardMaterial({
-      map: texture,
-      roughness: 0.92,
-      metalness: 0.08,
-      flatShading: true
-    });
+    return pbrFactory.getRegolithMaterial({ repeatX: 4, repeatY: 4 });
   }
 
   // --- Analytical Martian Topography (Procedural Multi-octave fBm) ---
@@ -178,12 +148,7 @@ export class TerrainManager {
 
   initRockScatter(count = 200) {
     const rockGeo = new THREE.DodecahedronGeometry(1.0, 1);
-    const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x8b3a1a,
-      roughness: 0.95,
-      metalness: 0.1,
-      flatShading: true
-    });
+    const rockMat = pbrFactory.getBasaltRockMaterial();
 
     this.instancedRocks = new THREE.InstancedMesh(rockGeo, rockMat, count);
     this.instancedRocks.castShadow = true;

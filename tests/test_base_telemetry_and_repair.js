@@ -42,7 +42,7 @@ console.log('--- TESTING BASE TELEMETRY SYNCHRONIZATION & REPAIR --- \n');
   assert(mockBaseState.baseParams.water === 68, 'Initial baseline Water is 68%');
 
   loop.startSol(1);
-  loop.update(60.0); // Complete Sol 1
+  loop.update(120.0); // Complete Sol 1 (120s total sol length)
 
   // Sync to base
   mockBaseState.syncParameters(engine.parameters);

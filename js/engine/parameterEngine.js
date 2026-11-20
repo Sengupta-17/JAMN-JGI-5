@@ -81,6 +81,7 @@ export class ParameterEngine {
     this.thetaColdModifier = 0.0;
     this.radiationDose_mSv = 0.0;
     this.hasRegolithBerm = false;
+    this.cachedSamples = 0; // MSR Sample Caching Depot count (0 to 5)
 
     // Subsystem health (0.0 to 1.0)
     this.moduleHealth = {
@@ -137,6 +138,7 @@ export class ParameterEngine {
     this.thetaColdModifier = 0.0;
     this.radiationDose_mSv = 0.0;
     this.hasRegolithBerm = false;
+    this.cachedSamples = 0;
 
     for (const key of Object.keys(this.moduleHealth)) {
       this.moduleHealth[key] = 1.0;

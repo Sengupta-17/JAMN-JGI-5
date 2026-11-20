@@ -1,6 +1,6 @@
 /**
  * Simulation Loop for Mars Surface Mission (Segment 4)
- * Orchestrates the 30-sol diurnal mission pacing (60s/sol: 42s Day / 18s Night),
+ * Orchestrates the 30-sol diurnal mission pacing (120s/sol: 90s Day / 30s Night),
  * resource integration, Crew-Hour management, and failure/handover evaluation.
  */
 
@@ -12,12 +12,12 @@ export class SimulationLoop {
 
     // Simulation Clock
     this.currentSol = 1;
-    this.solTimeElapsed = 0; // 0 to 60 seconds
-    this.solDurationSeconds = 60.0;
-    this.dayDurationSeconds = 42.0;
-    this.nightDurationSeconds = 18.0;
+    this.solTimeElapsed = 0; // 0 to 120 seconds
+    this.solDurationSeconds = 120.0;
+    this.dayDurationSeconds = 90.0;
+    this.nightDurationSeconds = 30.0;
 
-    this.currentPhase = 'day'; // 'day' (0-42s) | 'night' (42-60s)
+    this.currentPhase = 'day'; // 'day' (0-90s) | 'night' (90-120s)
     this.isRunning = false;
     this.isPaused = false;
     this.isGameOver = false;
@@ -219,32 +219,45 @@ export class SimulationLoop {
 
     // Check for Sol completion (60 seconds)
     if (this.solTimeElapsed >= this.solDurationSeconds) {
-      this.solTimeElapsed = 0;
-      const completedSol = this.currentSol;
+      this.completeSol();
+    }
+  }
 
-      if (completedSol >= 30) {
-        // Mission successfully reached Sol 30! Evaluate handover
-        this.evaluateMissionHandover();
-      } else {
-        // Daily cycle completed! Stop surface run, advance sol counter, and trigger return to base
-        this.isRunning = false;
-        this.currentSol++;
+  completeSol() {
+    this.solTimeElapsed = 0;
+    const completedSol = this.currentSol;
 
-        const summary = {
-          completedSol,
-          nextSol: this.currentSol,
-          parameters: { ...this.engine.parameters },
-          radiationDose_mSv: this.engine.radiationDose_mSv
-        };
+    // Sol completion workflow
+    this.isRunning = false;
+    const isMissionComplete = (completedSol >= 30);
+    if (!isMissionComplete) {
+      this.currentSol++;
+    }
 
-        if (this.bus) {
-          this.bus.emit('dayCompleted', summary);
-        }
-
-        for (const cb of this.onSolCompleteCallbacks) {
-          cb(summary);
-        }
+    const summary = {
+      completedSol,
+      day: completedSol,
+      nextSol: isMissionComplete ? 30 : this.currentSol,
+      isMissionComplete,
+      parameters: { ...this.engine.parameters },
+      cachedSamples: this.engine.cachedSamples || 0,
+      scienceYieldBonusPct: (this.engine.cachedSamples || 0) * 5,
+      radiationDose_mSv: this.engine.radiationDose_mSv,
+      finalGameState: {
+        siteId: this.engine.siteId,
+        challengeType: this.hazards.challengeType,
+        day: completedSol,
+        parameters: { ...this.engine.parameters }
       }
+    };
+
+    if (this.bus) {
+      this.bus.emit('solCompleted', summary);
+      this.bus.emit('dayCompleted', summary);
+    }
+
+    for (const cb of this.onSolCompleteCallbacks) {
+      cb(summary);
     }
   }
 
@@ -256,17 +269,17 @@ export class SimulationLoop {
 
     if (this.engine.parameters.oxygen <= 0) {
       failed = true;
-      reason = 'Crew Asphyxiation: Habitat life support oxygen reserve fully depleted.';
+      reason = 'oxygen_depleted';
     } else if (this.engine.parameters.food <= 0) {
       failed = true;
-      reason = 'Crew Starvation: Stored food and hydroponic biomass completely exhausted.';
+      reason = 'food_depleted';
     } else if (this.engine.parameters.water <= 0) {
       failed = true;
-      reason = 'Dehydration: Water recovery loops dry. Make-up reserve exhausted.';
+      reason = 'water_depleted';
     } else if (this.blackoutEnteredAt !== null && this.currentSol > this.blackoutEnteredAt) {
       // Power reached 0 and was not restored before the end of the sol
       failed = true;
-      reason = 'Grid Blackout: Total electrical failure unrecovered through sol transition. Life support halted.';
+      reason = 'power_depleted';
     }
 
     if (failed) {
@@ -283,15 +296,18 @@ export class SimulationLoop {
 
     let grade = 'Marginal Completion';
     let status = 'success';
-    let reason = 'Mission survived 30 sols. Base sustained with narrow reserve margins.';
+    let reason = 'marginal_handover';
 
     if (!allAboveZero) {
       status = 'failure';
       grade = 'Failed Mission';
-      reason = 'Base resource reserves depleted at mission conclusion.';
+      if (P.oxygen <= 0) reason = 'oxygen_depleted';
+      else if (P.food <= 0) reason = 'food_depleted';
+      else if (P.water <= 0) reason = 'water_depleted';
+      else reason = 'power_depleted';
     } else if (allHandoverTarget && !hasCriticalFault) {
       grade = 'Certified Handover Ready';
-      reason = 'Exemplary command: All resource buffers >= 25%, no critical faults. Habitat primed for incoming crew!';
+      reason = 'full_handover';
     }
 
     this.endGame(status, reason, grade);
@@ -307,6 +323,8 @@ export class SimulationLoop {
       handoverGrade: grade,
       solReached: Math.min(30, this.currentSol),
       parameters: { ...this.engine.parameters },
+      cachedSamples: this.engine.cachedSamples || 0,
+      scienceYieldBonusPct: (this.engine.cachedSamples || 0) * 5,
       radiationDose_mSv: this.engine.radiationDose_mSv,
       siteId: this.engine.siteId,
       challengeType: this.hazards.challengeType
